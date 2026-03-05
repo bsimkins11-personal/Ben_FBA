@@ -14,6 +14,7 @@ from backend.logic.keeper_calc import calculate_team_keepers, resolve_collisions
 from backend.logic.waiver_ranker import rank_free_agents
 from backend.cache.league_cache import LeagueCache
 from backend.agent.copilot import stream_copilot_response
+from backend.news.news_engine import get_curated_news
 
 logging.basicConfig(level=logging.INFO)
 
@@ -108,6 +109,12 @@ async def api_keepers():
     )
     keepers = resolve_collisions(keepers, config.get("num_teams", 12))
     return {"keepers": keepers}
+
+
+@app.get("/api/news")
+async def api_news():
+    """Proactive news feed — roster-aware, prioritized, free data sources."""
+    return await get_curated_news()
 
 
 @app.post("/api/chat")

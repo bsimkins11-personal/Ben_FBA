@@ -105,6 +105,25 @@ export interface KeeperData {
   keepers: KeeperEntry[];
 }
 
+export interface NewsItem {
+  type: string;
+  priority: "high" | "medium" | "low";
+  icon: string;
+  headline: string;
+  player: string;
+  detail: string;
+  date: string;
+  source: string;
+  url?: string;
+}
+
+export interface NewsData {
+  generated_at: string;
+  total_items: number;
+  items: NewsItem[];
+  games_today: number;
+}
+
 export const api = {
   roster: () => fetchJSON<RosterData>("/api/roster"),
   standings: () => fetchJSON<StandingsData>("/api/standings"),
@@ -112,6 +131,7 @@ export const api = {
   freeAgents: (pos?: string) =>
     fetchJSON<WaiverData>(`/api/free-agents${pos ? `?position=${pos}` : ""}`),
   keepers: () => fetchJSON<KeeperData>("/api/keepers"),
+  news: () => fetchJSON<NewsData>("/api/news"),
 };
 
 export interface SSEEvent {

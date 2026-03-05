@@ -1,18 +1,35 @@
-"""Four agent tools for the Bush League Co-Pilot."""
+"""Agent tools for the Bush League Co-Pilot.
+
+Six tools: 4 league tools + 2 live MLB intel tools.
+All MLB/news tools use free APIs — zero LLM cost.
+"""
 
 from __future__ import annotations
 
 import json
+import logging
 
 from backend.api.league import get_league_config
 from backend.api.roster import get_my_roster
 from backend.api.waivers import get_free_agents
 from backend.api.player import get_draft_history, get_matchup
+from backend.api.mlb_live import (
+    get_todays_schedule,
+    get_transactions,
+    search_player,
+)
+from backend.api.web_search import search_player_news, search_news
 from backend.cache.league_cache import LeagueCache
 from backend.logic.category_scorer import analyze_category_gaps, get_weak_categories
 from backend.logic.keeper_calc import calculate_team_keepers, resolve_collisions
 from backend.logic.waiver_ranker import rank_free_agents
-from backend.trimmer.payload_trimmer import trim_and_log, trim_roster, trim_free_agents, trim_matchup
+from backend.trimmer.payload_trimmer import (
+    trim_and_log, trim_roster, trim_free_agents, trim_matchup,
+)
+
+logger = logging.getLogger(__name__)
+
+# ── League Tools ──────────────────────────────────────────────
 
 TOOL_GET_ROSTER = {
     "name": "get_roster_and_standings",
@@ -87,7 +104,59 @@ TOOL_KEEPERS = {
     },
 }
 
-TOOLS = [TOOL_GET_ROSTER, TOOL_SEARCH_FA, TOOL_MATCHUP, TOOL_KEEPERS]
+# ── Live MLB Intel Tools ──────────────────────────────────────
+
+TOOL_MLB_UPDATES = {
+    "name": "get_mlb_updates",
+    "description": (
+        "Get LIVE MLB intel: today's schedule with probable pitchers and venues, "
+        "plus recent transactions (IL moves, call-ups, DFAs, trades) from the "
+        "last several days. Use this PROACTIVELY before recommending any roster "
+        "move to check if a player just hit the IL, got called up, was traded, "
+        "or has a start today. Also use when Ben asks about today's games, "
+        "pitching matchups, or recent MLB news."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "transaction_days": {
+                "type": "integer",
+                "description": "How many days of transactions to fetch (default 3, max 7).",
+            },
+        },
+        "required": [],
+    },
+}
+
+TOOL_PLAYER_LOOKUP = {
+    "name": "search_player_info",
+    "description": (
+        "Deep lookup on a specific player: MLB bio (team, position, bats/throws, "
+        "age, status), current season stats from MLB.com, and the latest news "
+        "headlines about them. Use this when Ben asks about a specific player, "
+        "when you need to verify a player's current status before recommending "
+        "a move, or to get injury/performance context for analysis."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "player_name": {
+                "type": "string",
+                "description": "Full or partial player name (e.g. 'Ohtani', 'Kyle Tucker').",
+            },
+        },
+        "required": ["player_name"],
+    },
+}
+
+TOOLS = [
+    TOOL_GET_ROSTER,
+    TOOL_SEARCH_FA,
+    TOOL_MATCHUP,
+    TOOL_KEEPERS,
+    TOOL_MLB_UPDATES,
+    TOOL_PLAYER_LOOKUP,
+]
 
 
 async def execute_tool(tool_name: str, tool_input: dict) -> str:
@@ -144,8 +213,8 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
         return json.dumps({"recommendations": ranked, "targeting": weak}, default=str)
 
     if tool_name == "get_matchup_analysis":
-        matchup = await get_matchup()
-        trimmed = trim_and_log(matchup, trim_matchup, "matchup")
+        matchup_data = await get_matchup()
+        trimmed = trim_and_log(matchup_data, trim_matchup, "matchup")
         return json.dumps(trimmed, default=str)
 
     if tool_name == "calculate_keepers":
@@ -161,5 +230,49 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
         )
         keepers = resolve_collisions(keepers, config.get("num_teams", 12))
         return json.dumps({"keepers": keepers}, default=str)
+
+    if tool_name == "get_mlb_updates":
+        days = min(tool_input.get("transaction_days", 3), 7)
+        try:
+            schedule = await get_todays_schedule()
+        except Exception as exc:
+            logger.warning("Schedule fetch failed: %s", exc)
+            schedule = []
+
+        try:
+            txns = await get_transactions(days=days)
+        except Exception as exc:
+            logger.warning("Transactions fetch failed: %s", exc)
+            txns = []
+
+        return json.dumps({
+            "todays_games": schedule[:12],
+            "recent_transactions": txns[:25],
+            "games_count": len(schedule),
+            "transaction_count": len(txns),
+        }, default=str)
+
+    if tool_name == "search_player_info":
+        player_name = tool_input.get("player_name", "")
+        if not player_name:
+            return json.dumps({"error": "player_name is required"})
+
+        mlb_data = None
+        try:
+            mlb_data = await search_player(player_name)
+        except Exception as exc:
+            logger.warning("MLB player search failed: %s", exc)
+
+        news = []
+        try:
+            news = await search_player_news(player_name)
+        except Exception as exc:
+            logger.warning("Player news search failed: %s", exc)
+
+        result = {
+            "player": mlb_data or {"error": "Player not found in MLB database"},
+            "recent_news": news[:5],
+        }
+        return json.dumps(result, default=str)
 
     return json.dumps({"error": f"Unknown tool: {tool_name}"})
