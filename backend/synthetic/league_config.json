@@ -1,0 +1,24 @@
+{
+  "league_key": "mlb.l.12345",
+  "name": "Bush League",
+  "num_teams": 12,
+  "scoring_type": "head",
+  "current_week": 8,
+  "season": "2026",
+  "scoring_categories": {
+    "hitting": ["OBP", "R", "TB", "RBI", "SB"],
+    "pitching": ["QS", "S+H", "K", "ERA", "WHIP"]
+  },
+  "roster_positions": [
+    "C","1B","2B","3B","SS",
+    "OF","OF","OF","OF",
+    "CI","MI","Util","Util",
+    "SP","SP","SP","SP","SP",
+    "RP","RP","RP","RP","RP",
+    "P","P"
+  ],
+  "bench_spots": 5,
+  "dl_spots": 5,
+  "na_spots": 2,
+  "max_keepers": 8
+}

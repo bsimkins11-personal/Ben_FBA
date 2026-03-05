@@ -1,0 +1,31 @@
+{
+  "week": 8,
+  "my_team": {
+    "team_key": "mlb.l.12345.t.4",
+    "team_name": "Ben's Bashers",
+    "stats": {
+      "OBP": 0.334, "R": 42, "TB": 118, "RBI": 38, "SB": 6,
+      "QS": 4, "SH": 11, "K": 67, "ERA": 3.81, "WHIP": 1.24
+    }
+  },
+  "opponent": {
+    "team_key": "mlb.l.12345.t.9",
+    "team_name": "Shift Happens",
+    "stats": {
+      "OBP": 0.321, "R": 45, "TB": 132, "RBI": 41, "SB": 9,
+      "QS": 5, "SH": 8, "K": 72, "ERA": 3.55, "WHIP": 1.18
+    }
+  },
+  "category_results": {
+    "OBP": "winning",
+    "R": "losing",
+    "TB": "losing",
+    "RBI": "losing",
+    "SB": "losing",
+    "QS": "losing",
+    "SH": "winning",
+    "K": "losing",
+    "ERA": "losing",
+    "WHIP": "losing"
+  }
+}

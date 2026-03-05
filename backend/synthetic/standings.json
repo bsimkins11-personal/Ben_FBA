@@ -1,0 +1,113 @@
+{
+  "my_team_key": "mlb.l.12345.t.4",
+  "standings": [
+    {
+      "rank": 1,
+      "team_key": "mlb.l.12345.t.7",
+      "team_name": "Dinger Dynasty",
+      "record": {"wins": 6, "losses": 1, "ties": 0},
+      "points": 72.0,
+      "category_ranks": {"OBP": 2, "R": 1, "TB": 1, "RBI": 1, "SB": 4, "QS": 3, "SH": 2, "K": 3, "ERA": 1, "WHIP": 2},
+      "category_totals": {"OBP": 0.358, "R": 55, "TB": 145, "RBI": 52, "SB": 11, "QS": 6, "SH": 14, "K": 82, "ERA": 2.88, "WHIP": 1.02}
+    },
+    {
+      "rank": 2,
+      "team_key": "mlb.l.12345.t.2",
+      "team_name": "The Mendoza Line",
+      "record": {"wins": 5, "losses": 2, "ties": 0},
+      "points": 66.5,
+      "category_ranks": {"OBP": 1, "R": 3, "TB": 5, "RBI": 2, "SB": 2, "QS": 1, "SH": 5, "K": 1, "ERA": 3, "WHIP": 1},
+      "category_totals": {"OBP": 0.362, "R": 50, "TB": 128, "RBI": 49, "SB": 14, "QS": 7, "SH": 12, "K": 88, "ERA": 3.15, "WHIP": 0.98}
+    },
+    {
+      "rank": 3,
+      "team_key": "mlb.l.12345.t.11",
+      "team_name": "Steroid Era Nostalgia",
+      "record": {"wins": 5, "losses": 1, "ties": 1},
+      "points": 63.0,
+      "category_ranks": {"OBP": 6, "R": 2, "TB": 2, "RBI": 3, "SB": 7, "QS": 2, "SH": 4, "K": 2, "ERA": 5, "WHIP": 4},
+      "category_totals": {"OBP": 0.332, "R": 52, "TB": 140, "RBI": 47, "SB": 8, "QS": 6, "SH": 13, "K": 85, "ERA": 3.45, "WHIP": 1.15}
+    },
+    {
+      "rank": 4,
+      "team_key": "mlb.l.12345.t.1",
+      "team_name": "Balk to the Future",
+      "record": {"wins": 4, "losses": 3, "ties": 0},
+      "points": 56.0,
+      "category_ranks": {"OBP": 3, "R": 5, "TB": 6, "RBI": 4, "SB": 3, "QS": 5, "SH": 3, "K": 6, "ERA": 6, "WHIP": 5},
+      "category_totals": {"OBP": 0.348, "R": 46, "TB": 125, "RBI": 44, "SB": 12, "QS": 5, "SH": 13, "K": 70, "ERA": 3.52, "WHIP": 1.18}
+    },
+    {
+      "rank": 5,
+      "team_key": "mlb.l.12345.t.10",
+      "team_name": "Pitches Be Crazy",
+      "record": {"wins": 4, "losses": 3, "ties": 0},
+      "points": 52.5,
+      "category_ranks": {"OBP": 4, "R": 4, "TB": 7, "RBI": 5, "SB": 6, "QS": 4, "SH": 6, "K": 4, "ERA": 2, "WHIP": 3},
+      "category_totals": {"OBP": 0.340, "R": 45, "TB": 122, "RBI": 42, "SB": 9, "QS": 5, "SH": 11, "K": 75, "ERA": 3.10, "WHIP": 1.12}
+    },
+    {
+      "rank": 6,
+      "team_key": "mlb.l.12345.t.4",
+      "team_name": "Ben's Bashers",
+      "record": {"wins": 3, "losses": 4, "ties": 0},
+      "points": 48.0,
+      "category_ranks": {"OBP": 5, "R": 7, "TB": 4, "RBI": 6, "SB": 9, "QS": 6, "SH": 8, "K": 5, "ERA": 4, "WHIP": 3},
+      "category_totals": {"OBP": 0.334, "R": 42, "TB": 118, "RBI": 38, "SB": 6, "QS": 4, "SH": 11, "K": 67, "ERA": 3.81, "WHIP": 1.24}
+    },
+    {
+      "rank": 7,
+      "team_key": "mlb.l.12345.t.9",
+      "team_name": "Shift Happens",
+      "record": {"wins": 3, "losses": 4, "ties": 0},
+      "points": 45.5,
+      "category_ranks": {"OBP": 8, "R": 6, "TB": 3, "RBI": 7, "SB": 5, "QS": 7, "SH": 7, "K": 7, "ERA": 7, "WHIP": 6},
+      "category_totals": {"OBP": 0.321, "R": 45, "TB": 132, "RBI": 41, "SB": 10, "QS": 4, "SH": 10, "K": 65, "ERA": 3.88, "WHIP": 1.26}
+    },
+    {
+      "rank": 8,
+      "team_key": "mlb.l.12345.t.5",
+      "team_name": "Caught Stealing Hearts",
+      "record": {"wins": 3, "losses": 3, "ties": 1},
+      "points": 43.0,
+      "category_ranks": {"OBP": 9, "R": 8, "TB": 8, "RBI": 8, "SB": 1, "QS": 8, "SH": 1, "K": 9, "ERA": 8, "WHIP": 8},
+      "category_totals": {"OBP": 0.315, "R": 40, "TB": 115, "RBI": 35, "SB": 18, "QS": 3, "SH": 16, "K": 58, "ERA": 3.95, "WHIP": 1.30}
+    },
+    {
+      "rank": 9,
+      "team_key": "mlb.l.12345.t.3",
+      "team_name": "Error 404: Wins Not Found",
+      "record": {"wins": 2, "losses": 4, "ties": 1},
+      "points": 38.0,
+      "category_ranks": {"OBP": 7, "R": 9, "TB": 9, "RBI": 9, "SB": 8, "QS": 9, "SH": 9, "K": 8, "ERA": 9, "WHIP": 7},
+      "category_totals": {"OBP": 0.325, "R": 38, "TB": 110, "RBI": 33, "SB": 7, "QS": 3, "SH": 8, "K": 60, "ERA": 4.12, "WHIP": 1.28}
+    },
+    {
+      "rank": 10,
+      "team_key": "mlb.l.12345.t.6",
+      "team_name": "RBI Steakhouse",
+      "record": {"wins": 2, "losses": 5, "ties": 0},
+      "points": 35.5,
+      "category_ranks": {"OBP": 10, "R": 10, "TB": 10, "RBI": 10, "SB": 10, "QS": 10, "SH": 10, "K": 10, "ERA": 10, "WHIP": 9},
+      "category_totals": {"OBP": 0.308, "R": 35, "TB": 105, "RBI": 30, "SB": 5, "QS": 2, "SH": 7, "K": 55, "ERA": 4.30, "WHIP": 1.32}
+    },
+    {
+      "rank": 11,
+      "team_key": "mlb.l.12345.t.8",
+      "team_name": "Infield Fly Rule Lawyers",
+      "record": {"wins": 1, "losses": 5, "ties": 1},
+      "points": 30.0,
+      "category_ranks": {"OBP": 11, "R": 11, "TB": 11, "RBI": 11, "SB": 11, "QS": 11, "SH": 11, "K": 11, "ERA": 11, "WHIP": 10},
+      "category_totals": {"OBP": 0.298, "R": 32, "TB": 98, "RBI": 28, "SB": 4, "QS": 2, "SH": 6, "K": 50, "ERA": 4.55, "WHIP": 1.38}
+    },
+    {
+      "rank": 12,
+      "team_key": "mlb.l.12345.t.12",
+      "team_name": "Designated for Assignment",
+      "record": {"wins": 1, "losses": 6, "ties": 0},
+      "points": 25.0,
+      "category_ranks": {"OBP": 12, "R": 12, "TB": 12, "RBI": 12, "SB": 12, "QS": 12, "SH": 12, "K": 12, "ERA": 12, "WHIP": 12},
+      "category_totals": {"OBP": 0.285, "R": 28, "TB": 88, "RBI": 24, "SB": 3, "QS": 1, "SH": 4, "K": 45, "ERA": 5.10, "WHIP": 1.48}
+    }
+  ]
+}

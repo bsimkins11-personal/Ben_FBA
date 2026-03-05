@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --mlb-navy: #002D72;
+  --mlb-navy-dark: #041E42;
+  --mlb-red: #E31937;
+  --mlb-red-hover: #BF1530;
+  --mlb-white: #FFFFFF;
+  --mlb-gray-50: #F7F7F8;
+  --mlb-gray-100: #EBEBED;
+  --mlb-gray-200: #D4D4D8;
+  --mlb-gray-400: #9CA3AF;
+  --mlb-gray-600: #52525B;
+  --mlb-gray-800: #27272A;
+  --mlb-green: #1B7A3D;
+  --mlb-gold: #C4953A;
+}
+
+@theme inline {
+  --color-navy: var(--mlb-navy);
+  --color-navy-dark: var(--mlb-navy-dark);
+  --color-mlb-red: var(--mlb-red);
+  --color-mlb-red-hover: var(--mlb-red-hover);
+  --color-surface: var(--mlb-gray-50);
+  --color-border: var(--mlb-gray-100);
+  --color-muted: var(--mlb-gray-400);
+  --color-subtle: var(--mlb-gray-600);
+  --color-mlb-green: var(--mlb-green);
+  --color-mlb-gold: var(--mlb-gold);
+  --font-sans: "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--mlb-gray-50);
+  color: var(--mlb-gray-800);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--mlb-gray-100);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mlb-gray-200);
+  border-radius: 3px;
+}
+
+/* Status badges */
+.badge-dtd {
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.badge-il {
+  background: #FEE2E2;
+  color: #991B1B;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* Category rank indicators */
+.rank-strong { color: var(--mlb-green); font-weight: 700; }
+.rank-mid { color: var(--mlb-gold); font-weight: 600; }
+.rank-weak { color: var(--mlb-red); font-weight: 700; }
+
+/* Winning/losing matchup cells */
+.cat-win { background: #DCFCE7; }
+.cat-lose { background: #FEE2E2; }
+.cat-tie { background: #FEF9C3; }
+
+/* SSE streaming cursor blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: "▊";
+  animation: blink 1s step-end infinite;
+  color: var(--mlb-navy);
+}

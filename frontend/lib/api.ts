@@ -1,0 +1,159 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+async function fetchJSON<T = unknown>(path: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`API ${path}: ${res.status}`);
+  return res.json();
+}
+
+export interface PlayerStats {
+  OBP?: number;
+  R?: number;
+  TB?: number;
+  RBI?: number;
+  SB?: number;
+  QS?: number;
+  SH?: number;
+  K?: number;
+  ERA?: number;
+  WHIP?: number;
+}
+
+export interface RosterPlayer {
+  name: string;
+  position: string;
+  eligible_positions: string[];
+  status: string;
+  stats: PlayerStats;
+}
+
+export interface RosterData {
+  team_key: string;
+  team_name: string;
+  week_stats: PlayerStats;
+  category_ranks: Record<string, number>;
+  roster: RosterPlayer[];
+}
+
+export interface TeamStanding {
+  rank: number;
+  team_key: string;
+  team_name: string;
+  record: { wins: number; losses: number; ties: number };
+  points: number;
+  category_ranks: Record<string, number>;
+  category_totals: Record<string, number>;
+}
+
+export interface GapAnalysis {
+  category: string;
+  my_rank: number;
+  my_value: number;
+  league_avg: number;
+  gap_to_next: number;
+  direction: string;
+  priority: string;
+}
+
+export interface StandingsData {
+  my_team_key: string;
+  standings: TeamStanding[];
+  gap_analysis: GapAnalysis[];
+  weak_categories: string[];
+}
+
+export interface FreeAgentRec {
+  name: string;
+  position: string;
+  eligible_positions: string[];
+  status: string;
+  projected_stats: PlayerStats;
+  waiver_score: number;
+  helps_categories: string[];
+  recommendation: string;
+}
+
+export interface WaiverData {
+  recommendations: FreeAgentRec[];
+  targeting: string[];
+}
+
+export interface MatchupTeam {
+  team_key: string;
+  team_name: string;
+  stats: PlayerStats;
+}
+
+export interface MatchupData {
+  week: number;
+  my_team: MatchupTeam;
+  opponent: MatchupTeam;
+  category_results: Record<string, string>;
+}
+
+export interface KeeperEntry {
+  player: string;
+  round_cost: number;
+  notes: string;
+  value_score: number;
+  collision_note?: string;
+}
+
+export interface KeeperData {
+  keepers: KeeperEntry[];
+}
+
+export const api = {
+  roster: () => fetchJSON<RosterData>("/api/roster"),
+  standings: () => fetchJSON<StandingsData>("/api/standings"),
+  matchup: () => fetchJSON<MatchupData>("/api/matchup"),
+  freeAgents: (pos?: string) =>
+    fetchJSON<WaiverData>(`/api/free-agents${pos ? `?position=${pos}` : ""}`),
+  keepers: () => fetchJSON<KeeperData>("/api/keepers"),
+};
+
+export interface SSEEvent {
+  event: "text_delta" | "tool_use" | "done" | "error";
+  data: string;
+}
+
+export async function* streamChat(
+  message: string,
+  history: Array<{ role: string; content: string }>
+): AsyncGenerator<SSEEvent> {
+  const res = await fetch(`${API_URL}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, history }),
+  });
+
+  if (!res.ok) {
+    yield { event: "error", data: `HTTP ${res.status}` };
+    return;
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) return;
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const cleaned = line.replace(/^data: /, "").trim();
+      if (!cleaned) continue;
+      try {
+        yield JSON.parse(cleaned) as SSEEvent;
+      } catch {
+        // skip malformed
+      }
+    }
+  }
+}
