@@ -23,8 +23,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://*.vercel.app",
+        "https://benfba.vercel.app",
+        "https://benfba-bryan-simkins.vercel.app",
+        "https://benfba-git-main-bryan-simkins.vercel.app",
     ],
+    allow_origin_regex=r"https://ben-.*-bryan-simkins\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
