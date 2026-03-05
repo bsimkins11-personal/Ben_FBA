@@ -17,9 +17,11 @@ from backend.trimmer.payload_trimmer import trim_and_log, trim_roster, trim_free
 TOOL_GET_ROSTER = {
     "name": "get_roster_and_standings",
     "description": (
-        "Returns the manager's current roster with player stats, "
-        "category ranks (1-12 per category), and a gap analysis "
-        "showing which categories are weakest and how far behind the next rank."
+        "Get Ben's full active roster with per-player week stats, "
+        "team category ranks (1-12, 1=best in league), and a gap analysis "
+        "showing which categories are weakest, how far behind the next rank, "
+        "and the league average for each. Use this to diagnose roster strengths, "
+        "identify category gaps, and inform any roster move recommendation."
     ),
     "input_schema": {
         "type": "object",
@@ -31,16 +33,22 @@ TOOL_GET_ROSTER = {
 TOOL_SEARCH_FA = {
     "name": "search_free_agents",
     "description": (
-        "Search available free agents on the waiver wire. "
-        "Returns players ranked by how much they help the team's weakest categories. "
-        "Optionally filter by position."
+        "Search available free agents, scored and ranked by projected impact on "
+        "Ben's weakest categories. Returns waiver scores, which categories each "
+        "player helps, multi-position eligibility, injury status, and a recommendation. "
+        "Use position filter to find specific needs (e.g. 'RP' for S+H help, "
+        "'OF' for outfield depth, 'SS' for MI-eligible speed). Call without a "
+        "position to get the overall best available."
     ),
     "input_schema": {
         "type": "object",
         "properties": {
             "position": {
                 "type": "string",
-                "description": "Filter by position (e.g. 'SS', 'OF', 'SP', 'RP'). Optional.",
+                "description": (
+                    "Position filter: C, 1B, 2B, 3B, SS, OF, SP, RP. "
+                    "Omit for best available across all positions."
+                ),
             },
         },
         "required": [],
@@ -50,8 +58,11 @@ TOOL_SEARCH_FA = {
 TOOL_MATCHUP = {
     "name": "get_matchup_analysis",
     "description": (
-        "Returns the current week's H2H category matchup breakdown — "
-        "stats for both teams and which categories are winning/losing."
+        "Get this week's H2H category matchup — both teams' stats in all 10 "
+        "categories and which categories Ben is currently winning, losing, or "
+        "tied in. Use this to make tactical in-week decisions: which categories "
+        "to push for, which to protect, whether to stream or sit pitchers, "
+        "and where a single roster move could flip a category."
     ),
     "input_schema": {
         "type": "object",
@@ -63,9 +74,11 @@ TOOL_MATCHUP = {
 TOOL_KEEPERS = {
     "name": "calculate_keepers",
     "description": (
-        "Calculate keeper costs for all roster players based on draft history "
-        "and Bush League constitution rules. Returns each player's round cost, "
-        "value score, and any collision notes."
+        "Calculate keeper costs for all roster players using Bush League "
+        "constitution rules (6.2, 6.3, 6.7, 6.9). Returns round cost, value "
+        "score (20 minus round cost), rule citation, and collision notes for "
+        "same-round conflicts. Use this when Ben asks about keepers, dynasty "
+        "value, or whether a player is worth holding through a rebuild."
     ),
     "input_schema": {
         "type": "object",
