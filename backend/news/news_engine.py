@@ -140,12 +140,25 @@ async def _build_waiver_intel(transactions: list[dict]) -> list[dict]:
     return items[:10]
 
 
+_NON_MLB_KEYWORDS = {
+    "college", "ncaa", "draft prospect", "high school",
+    "wbc", "world baseball classic", "nippon", "kbo",
+    "little league", "softball", "cricket",
+}
+
+
+def _is_mlb_article(title: str, snippet: str) -> bool:
+    """Filter out non-MLB content (college, international, etc.)."""
+    combined = f"{title} {snippet}".lower()
+    return not any(kw in combined for kw in _NON_MLB_KEYWORDS)
+
+
 async def _build_news_items(roster_names: set[str]) -> list[dict]:
-    """Fetch fantasy baseball news, tag items that mention roster players."""
+    """Fetch MLB fantasy baseball news, tag items that mention roster players."""
     try:
         articles = await search_news(
-            "fantasy baseball injuries waiver wire news today",
-            max_results=10,
+            "MLB fantasy baseball injury roster moves waiver wire",
+            max_results=12,
         )
     except Exception:
         logger.warning("News search failed, skipping")
@@ -155,8 +168,11 @@ async def _build_news_items(roster_names: set[str]) -> list[dict]:
     for article in articles:
         title = article.get("title", "")
         snippet = article.get("snippet", "")
-        combined = f"{title} {snippet}"
 
+        if not _is_mlb_article(title, snippet):
+            continue
+
+        combined = f"{title} {snippet}"
         matched_player = _match_roster_player(combined, roster_names)
         priority = "high" if matched_player else "low"
 
@@ -172,7 +188,7 @@ async def _build_news_items(roster_names: set[str]) -> list[dict]:
             "url": article.get("url", ""),
         })
 
-    return items
+    return items[:8]
 
 
 async def get_curated_news() -> dict:

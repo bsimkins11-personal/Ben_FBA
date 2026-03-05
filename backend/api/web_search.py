@@ -63,13 +63,13 @@ async def search_news(query: str, max_results: int = 8) -> list[dict]:
 
 
 async def search_player_news(player_name: str) -> list[dict]:
-    """Search for recent fantasy-relevant news about a specific player."""
+    """Search for recent MLB news about a specific player."""
     return await search_news(
-        f"{player_name} MLB fantasy baseball",
+        f"{player_name} MLB injury update roster fantasy",
         max_results=6,
     )
 
 
-async def search_fantasy_news(topic: str = "fantasy baseball") -> list[dict]:
-    """Search for general fantasy baseball news, waiver wire, or injury updates."""
+async def search_fantasy_news(topic: str = "MLB fantasy baseball") -> list[dict]:
+    """Search for MLB fantasy baseball news, waiver wire, or injury updates."""
     return await search_news(topic, max_results=8)

@@ -50,10 +50,18 @@ async def get_todays_schedule() -> list[dict]:
     return games
 
 
+MLB_TEAM_IDS = {
+    108, 109, 110, 111, 112, 113, 114, 115, 116, 117,  # AL
+    118, 119, 120, 121, 133, 134, 135, 136, 137, 138,  # NL
+    139, 140, 141, 142, 143, 144, 145, 146, 147, 158,  # NL + AL
+}
+
+
 async def get_transactions(days: int = 5) -> list[dict]:
     """Recent MLB transactions: IL moves, call-ups, DFAs, trades, signings.
 
-    Filters to fantasy-relevant transaction types only.
+    Filters to fantasy-relevant types from the 30 MLB clubs only —
+    excludes international, college, and minor-league-only moves.
     """
     end = date.today()
     start = end - timedelta(days=days)
@@ -69,13 +77,27 @@ async def get_transactions(days: int = 5) -> list[dict]:
         "Recall", "Designation for Assignment",
     }
 
+    EXCLUDE_KEYWORDS = {
+        "high school", "workout", "minor league camp",
+        "assigned to spring training",
+    }
+
     txns = []
     for t in data.get("transactions", []):
         type_cd = t.get("typeDesc", "")
         if not any(rt.lower() in type_cd.lower() for rt in RELEVANT_TYPES):
             continue
-        player = t.get("person", {})
+
         team = t.get("team", {})
+        team_id = team.get("id")
+        if team_id and team_id not in MLB_TEAM_IDS:
+            continue
+
+        desc_lower = t.get("description", "").lower()
+        if any(kw in desc_lower for kw in EXCLUDE_KEYWORDS):
+            continue
+
+        player = t.get("person", {})
         txns.append({
             "player": player.get("fullName", "Unknown"),
             "player_id": player.get("id"),
