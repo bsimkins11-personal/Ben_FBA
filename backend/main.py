@@ -102,6 +102,28 @@ async def auth_status():
     }
 
 
+@app.post("/auth/rediscover")
+async def auth_rediscover():
+    """Retry league discovery with existing tokens."""
+    store = get_token_store()
+    if not store.is_authenticated:
+        return {"error": "Not authenticated"}
+
+    try:
+        result = await discover_league()
+        from backend.auth.yahoo_auth import _persist_tokens
+        await _persist_tokens()
+        return {
+            "status": "ok",
+            "league_key": store.league_key,
+            "team_key": store.team_key,
+            **result,
+        }
+    except Exception as e:
+        logging.getLogger(__name__).error("League rediscovery failed: %s", e)
+        return {"error": str(e)}
+
+
 @app.post("/auth/logout")
 async def auth_logout():
     """Clear stored tokens from memory and Postgres."""

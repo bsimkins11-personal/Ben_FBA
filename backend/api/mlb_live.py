@@ -61,6 +61,21 @@ _NON_MLB_TEAM_KEYWORDS = {
     "japan", "korea", "chinese taipei", "mexico", "cuba", "canada",
     "great britain", "netherlands", "italy", "israel", "australia",
     "colombia", "panama", "nicaragua", "czech republic", "brazil",
+    "south africa", "germany", "france", "spain", "hong kong",
+    "new zealand", "philippines",
+}
+
+_MLB_TEAM_NAMES = {
+    "arizona diamondbacks", "atlanta braves", "baltimore orioles",
+    "boston red sox", "chicago cubs", "chicago white sox",
+    "cincinnati reds", "cleveland guardians", "colorado rockies",
+    "detroit tigers", "houston astros", "kansas city royals",
+    "los angeles angels", "los angeles dodgers", "miami marlins",
+    "milwaukee brewers", "minnesota twins", "new york mets",
+    "new york yankees", "oakland athletics", "philadelphia phillies",
+    "pittsburgh pirates", "san diego padres", "san francisco giants",
+    "seattle mariners", "st. louis cardinals", "tampa bay rays",
+    "texas rangers", "toronto blue jays", "washington nationals",
 }
 
 
@@ -108,11 +123,27 @@ async def get_transactions(days: int = 5) -> list[dict]:
         if any(kw in desc_lower for kw in EXCLUDE_KEYWORDS):
             continue
 
+        if any(kw in desc_lower for kw in _NON_MLB_TEAM_KEYWORDS):
+            continue
+
+        # When team data is missing (common in pre-season), only keep
+        # transactions that reference a real MLB club by name
+        if not team_id and not team.get("name"):
+            if not any(tn in desc_lower for tn in _MLB_TEAM_NAMES):
+                continue
+
         player = t.get("person", {})
+        resolved_team = team.get("name", "")
+        if not resolved_team:
+            for tn in _MLB_TEAM_NAMES:
+                if tn in desc_lower:
+                    resolved_team = tn.title()
+                    break
+
         txns.append({
             "player": player.get("fullName", "Unknown"),
             "player_id": player.get("id"),
-            "team": team.get("name", ""),
+            "team": resolved_team,
             "type": type_cd,
             "description": t.get("description", "")[:200],
             "date": t.get("date", ""),

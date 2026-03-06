@@ -121,9 +121,15 @@ async def discover_league() -> dict:
     store = get_token_store()
     games = _dig(data, "fantasy_content", "users", "0", "user")
     if not games:
-        raise RuntimeError("Could not parse Yahoo user data")
+        logger.warning("discover_league: no user data found in response")
+        logger.debug("discover_league raw response keys: %s", list(data.keys()) if data else "None")
+        return {"league_key": "", "team_key": "", "team_name": "", "league_name": ""}
 
     game_list = games[1].get("games", {}) if len(games) > 1 else {}
+
+    if not game_list or game_list.get("count", 0) == 0:
+        logger.warning("discover_league: user has no MLB fantasy games")
+        return {"league_key": "", "team_key": "", "team_name": "", "league_name": ""}
 
     league_key = ""
     team_key = ""
