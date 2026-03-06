@@ -1,7 +1,5 @@
 import os
 
-USE_SYNTHETIC_DATA = os.getenv("USE_SYNTHETIC_DATA", "true").lower() == "true"
-
 LLM_MODEL = "claude-haiku-4-5-20251001"
 LLM_MAX_TOKENS = 1200
 SYSTEM_PROMPT_TOKEN_BUDGET = 2000
@@ -14,6 +12,7 @@ YAHOO_REDIRECT_URI = os.getenv(
     "https://benfba-production.up.railway.app/auth/yahoo/callback",
 )
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://benfba.vercel.app")
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 YAHOO_STAT_IDS = {
     "OBP": 13,

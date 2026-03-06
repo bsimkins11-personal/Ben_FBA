@@ -1,7 +1,8 @@
 """Yahoo OAuth 2.0 Authorization Code flow.
 
-Single-user token store (in-memory). On Railway redeploy Ben just
-re-authenticates — takes 10 seconds via the Yahoo login button.
+Tokens are stored in-memory for speed and persisted to Postgres so
+they survive Railway redeploys. On startup, tokens are loaded from
+Postgres automatically — no re-auth needed after a deploy.
 """
 
 from __future__ import annotations
@@ -115,6 +116,7 @@ async def exchange_code(code: str, state: str) -> dict:
     _store.refresh_token = data["refresh_token"]
     _store.expires_at = time.time() + data.get("expires_in", 3600) - 60
 
+    await _persist_tokens()
     logger.info("Yahoo OAuth tokens acquired, expires in %ss", data.get("expires_in"))
     return data
 
@@ -149,6 +151,7 @@ async def refresh_tokens() -> str:
         _store.refresh_token = data["refresh_token"]
     _store.expires_at = time.time() + data.get("expires_in", 3600) - 60
 
+    await _persist_tokens()
     logger.info("Yahoo tokens refreshed")
     return _store.access_token
 
@@ -162,3 +165,58 @@ async def get_valid_token() -> str:
         return await refresh_tokens()
 
     return _store.access_token
+
+
+# ── Postgres persistence helpers ─────────────────────────────
+
+async def _persist_tokens() -> None:
+    """Save current in-memory tokens to Postgres (fire-and-forget safe)."""
+    try:
+        from backend.db.postgres import save_tokens
+        await save_tokens(
+            access_token=_store.access_token,
+            refresh_token=_store.refresh_token,
+            expires_at=_store.expires_at,
+            league_key=_store.league_key,
+            team_key=_store.team_key,
+        )
+    except Exception as exc:
+        logger.warning("Failed to persist tokens to Postgres: %s", exc)
+
+
+async def restore_tokens_from_db() -> bool:
+    """Load tokens from Postgres into the in-memory store.
+
+    Returns True if tokens were restored (i.e., Ben is auto-authenticated).
+    Called once at startup so redeploys don't require re-auth.
+    """
+    try:
+        from backend.db.postgres import load_tokens
+        row = await load_tokens()
+        if not row:
+            return False
+
+        _store.access_token = row["access_token"]
+        _store.refresh_token = row["refresh_token"]
+        _store.expires_at = row["expires_at"]
+        _store.league_key = row["league_key"]
+        _store.team_key = row["team_key"]
+        logger.info(
+            "Restored Yahoo tokens from Postgres (league=%s, expires_at=%.0f)",
+            _store.league_key,
+            _store.expires_at,
+        )
+        return True
+    except Exception as exc:
+        logger.warning("Could not restore tokens from Postgres: %s", exc)
+        return False
+
+
+async def clear_stored_tokens() -> None:
+    """Clear tokens from both memory and Postgres."""
+    _store.clear()
+    try:
+        from backend.db.postgres import clear_tokens
+        await clear_tokens()
+    except Exception as exc:
+        logger.warning("Failed to clear Postgres tokens: %s", exc)

@@ -13,13 +13,13 @@ from backend.api.league import get_league_config
 from backend.api.roster import get_my_roster
 from backend.api.waivers import get_free_agents
 from backend.api.player import get_draft_history, get_matchup
+from backend.api.standings import get_standings
 from backend.api.mlb_live import (
     get_todays_schedule,
     get_transactions,
     search_player,
 )
 from backend.api.web_search import search_player_news, search_news
-from backend.cache.league_cache import LeagueCache
 from backend.logic.category_scorer import analyze_category_gaps, get_weak_categories
 from backend.logic.keeper_calc import calculate_team_keepers, resolve_collisions
 from backend.logic.waiver_ranker import rank_free_agents
@@ -164,7 +164,7 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
 
     if tool_name == "get_roster_and_standings":
         roster_data = await get_my_roster()
-        standings_data = LeagueCache().get_standings()
+        standings_data = await get_standings()
 
         my_ranks = roster_data.get("category_ranks", {})
         team_totals = [
@@ -194,7 +194,7 @@ async def execute_tool(tool_name: str, tool_input: dict) -> str:
         position = tool_input.get("position")
         fa_data = await get_free_agents(position=None)
         roster_data = await get_my_roster()
-        standings_data = LeagueCache().get_standings()
+        standings_data = await get_standings()
 
         my_ranks = roster_data.get("category_ranks", {})
         team_totals = [

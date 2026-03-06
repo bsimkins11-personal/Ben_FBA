@@ -12,7 +12,7 @@ from backend.api.player import get_draft_history, get_matchup
 from backend.logic.category_scorer import analyze_category_gaps, get_weak_categories
 from backend.logic.keeper_calc import calculate_team_keepers, resolve_collisions
 from backend.logic.waiver_ranker import rank_free_agents
-from backend.cache.league_cache import LeagueCache
+from backend.api.standings import get_standings
 from backend.agent.copilot import stream_copilot_response
 from backend.news.news_engine import get_curated_news
 from backend.logic.matchup_advisor import generate_matchup_advice
@@ -22,6 +22,8 @@ from backend.auth.yahoo_auth import (
     get_login_url,
     exchange_code,
     get_token_store,
+    restore_tokens_from_db,
+    clear_stored_tokens,
 )
 from backend.api.yahoo_client import discover_league
 from backend.config import FRONTEND_URL
@@ -29,6 +31,17 @@ from backend.config import FRONTEND_URL
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Bush League Co-Pilot", version="0.1.0")
+
+
+@app.on_event("startup")
+async def _startup():
+    restored = await restore_tokens_from_db()
+    if restored:
+        store = get_token_store()
+        logging.getLogger(__name__).info(
+            "Auto-restored Yahoo session (league=%s)", store.league_key
+        )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,6 +82,8 @@ async def auth_yahoo_callback(code: str = "", state: str = "", error: str = ""):
     try:
         await exchange_code(code, state)
         await discover_league()
+        from backend.auth.yahoo_auth import _persist_tokens
+        await _persist_tokens()
         return RedirectResponse(f"{FRONTEND_URL}?auth=success")
     except Exception as e:
         logging.getLogger(__name__).error("Yahoo OAuth callback failed: %s", e)
@@ -89,8 +104,8 @@ async def auth_status():
 
 @app.post("/auth/logout")
 async def auth_logout():
-    """Clear stored tokens — reverts to synthetic data."""
-    get_token_store().clear()
+    """Clear stored tokens from memory and Postgres."""
+    await clear_stored_tokens()
     return {"status": "logged_out", "mode": "synthetic"}
 
 
@@ -106,13 +121,7 @@ async def api_roster():
 
 @app.get("/api/standings")
 async def api_standings():
-    store = get_token_store()
-    if store.is_authenticated and store.league_key:
-        from backend.api import yahoo_client
-        standings_data = await yahoo_client.get_standings(store.league_key)
-    else:
-        standings_data = LeagueCache().get_standings()
-
+    standings_data = await get_standings()
     roster_data = await get_my_roster()
     my_ranks = roster_data.get("category_ranks", {})
     team_totals = [
@@ -136,13 +145,7 @@ async def api_matchup():
 async def api_free_agents(position: str | None = Query(None)):
     fa_data = await get_free_agents(position=position)
     roster_data = await get_my_roster()
-
-    store = get_token_store()
-    if store.is_authenticated and store.league_key:
-        from backend.api import yahoo_client
-        standings_data = await yahoo_client.get_standings(store.league_key)
-    else:
-        standings_data = LeagueCache().get_standings()
+    standings_data = await get_standings()
 
     my_ranks = roster_data.get("category_ranks", {})
     team_totals = [
