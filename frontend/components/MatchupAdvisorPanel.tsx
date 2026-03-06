@@ -527,9 +527,7 @@ function SectionLabel({
    MAIN PANEL
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-const SCORE_POLL_MS = 90_000;    // scoreboard every 90s during games
-const ALERTS_POLL_MS = 120_000;  // alerts every 2 min
-const NEWS_POLL_MS = 300_000;    // news every 5 min
+const POLL_MS = 600_000; // all data refreshes every 10 min
 
 export default function MatchupAdvisorPanel() {
   const [data, setData] = useState<MatchupAdvisorData | null>(null);
@@ -554,19 +552,13 @@ export default function MatchupAdvisorPanel() {
     api.alerts().then((d) => setAlerts(d.alerts)).catch(() => {});
     api.news().then(setNews).catch(() => {});
 
-    const scoreInterval = setInterval(refreshScores, SCORE_POLL_MS);
-    const alertsInterval = setInterval(() => {
+    const interval = setInterval(() => {
+      refreshScores();
       api.alerts().then((d) => setAlerts(d.alerts)).catch(() => {});
-    }, ALERTS_POLL_MS);
-    const newsInterval = setInterval(() => {
       api.news().then(setNews).catch(() => {});
-    }, NEWS_POLL_MS);
+    }, POLL_MS);
 
-    return () => {
-      clearInterval(scoreInterval);
-      clearInterval(alertsInterval);
-      clearInterval(newsInterval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   if (error) {
