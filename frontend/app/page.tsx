@@ -10,6 +10,7 @@ import KeeperPanel from "@/components/KeeperPanel";
 import NewsPanel from "@/components/NewsPanel";
 import MatchupAdvisorPanel from "@/components/MatchupAdvisorPanel";
 import MatchupBar from "@/components/MatchupBar";
+import CriticalAlertBanner from "@/components/CriticalAlertBanner";
 
 const TABS = [
   { id: "roster", label: "Roster" },
@@ -27,6 +28,7 @@ export default function Home() {
 
   return (
     <div className="min-h-[calc(100vh-48px)]">
+      <CriticalAlertBanner />
       {/* Hero Banner */}
       <div className="relative h-36 md:h-44 overflow-hidden bg-navy-dark">
         <Image

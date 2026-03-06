@@ -16,6 +16,7 @@ from backend.cache.league_cache import LeagueCache
 from backend.agent.copilot import stream_copilot_response
 from backend.news.news_engine import get_curated_news
 from backend.logic.matchup_advisor import generate_matchup_advice
+from backend.logic.critical_alerts import get_critical_alerts
 from backend.api.mlb_live import get_todays_schedule
 
 logging.basicConfig(level=logging.INFO)
@@ -111,6 +112,13 @@ async def api_keepers():
     )
     keepers = resolve_collisions(keepers, config.get("num_teams", 12))
     return {"keepers": keepers}
+
+
+@app.get("/api/alerts")
+async def api_alerts():
+    """Mission-critical alerts only — IL moves, DTD starters, elite pickups."""
+    alerts = await get_critical_alerts()
+    return {"alerts": alerts}
 
 
 @app.get("/api/matchup/advisor")

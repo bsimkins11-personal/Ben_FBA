@@ -105,6 +105,19 @@ export interface KeeperData {
   keepers: KeeperEntry[];
 }
 
+export interface CriticalAlert {
+  severity: "critical" | "warning";
+  type: "injury" | "transaction" | "pickup";
+  headline: string;
+  detail: string;
+  player: string;
+  action: string;
+}
+
+export interface AlertsData {
+  alerts: CriticalAlert[];
+}
+
 export interface MatchupPlayerAdvice {
   name: string;
   position: string;
@@ -166,6 +179,7 @@ export interface NewsData {
 }
 
 export const api = {
+  alerts: () => fetchJSON<AlertsData>("/api/alerts"),
   roster: () => fetchJSON<RosterData>("/api/roster"),
   standings: () => fetchJSON<StandingsData>("/api/standings"),
   matchup: () => fetchJSON<MatchupData>("/api/matchup"),
