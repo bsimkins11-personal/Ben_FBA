@@ -80,7 +80,7 @@ export default function WaiverPanel() {
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[10px] text-muted font-medium">
-                          {fa.eligible_positions.join(" / ")}
+                          {(fa.eligible_positions ?? []).join(" / ")}
                         </span>
                       </div>
                     </div>
@@ -115,7 +115,7 @@ export default function WaiverPanel() {
 
                   {/* Recommendation */}
                   <div className="mt-1.5 flex items-center gap-1.5">
-                    {fa.helps_categories.map((cat) => (
+                    {(fa.helps_categories ?? []).map((cat) => (
                       <span key={cat} className="text-[9px] px-1.5 py-0.5 rounded bg-green-50 text-green-800 font-semibold">
                         {cat === "SH" ? "S+H" : cat}
                       </span>

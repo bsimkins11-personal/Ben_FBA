@@ -32,13 +32,25 @@ export default function RosterPanel() {
     );
   }
 
-  const hitters = data.roster.filter(
-    (p) => !["SP", "RP", "P"].some((pos) => p.eligible_positions.includes(pos) && !p.eligible_positions.includes("Util"))
-  ).filter((p) => p.stats.OBP !== undefined);
+  const roster = data.roster ?? [];
+  const categoryRanks = data.category_ranks ?? {};
 
-  const pitchers = data.roster.filter(
-    (p) => ["SP", "RP", "P"].some((pos) => p.eligible_positions.includes(pos))
+  const hitters = roster.filter(
+    (p) => !["SP", "RP", "P"].some((pos) => (p.eligible_positions ?? []).includes(pos) && !(p.eligible_positions ?? []).includes("Util"))
+  ).filter((p) => p.stats?.OBP !== undefined);
+
+  const pitchers = roster.filter(
+    (p) => ["SP", "RP", "P"].some((pos) => (p.eligible_positions ?? []).includes(pos))
   );
+
+  if (roster.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border border-border p-6 text-center">
+        <p className="text-sm font-semibold text-navy">No Roster Data</p>
+        <p className="text-xs text-muted mt-1">Roster data will populate once the season starts or after syncing with Yahoo.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -52,7 +64,7 @@ export default function RosterPanel() {
             <div key={cat} className="py-2 border-r border-border last:border-r-0">
               <div className="text-muted font-medium">{cat}</div>
               <div className="text-lg mt-0.5">
-                <RankCell rank={data.category_ranks[cat] || 0} />
+                <RankCell rank={categoryRanks[cat] || 0} />
               </div>
             </div>
           ))}
@@ -62,7 +74,7 @@ export default function RosterPanel() {
             <div key={cat} className="py-2 border-r border-border last:border-r-0">
               <div className="text-muted font-medium">{cat === "SH" ? "S+H" : cat}</div>
               <div className="text-lg mt-0.5">
-                <RankCell rank={data.category_ranks[cat] || 0} />
+                <RankCell rank={categoryRanks[cat] || 0} />
               </div>
             </div>
           ))}
@@ -93,13 +105,13 @@ export default function RosterPanel() {
                 <tr key={p.name} className={`border-t border-border ${i % 2 === 0 ? "" : "bg-surface/50"} ${p.position === "BN" || p.position === "DL" ? "opacity-60" : ""}`}>
                   <td className="py-1.5 px-2 text-muted font-medium">{p.position}</td>
                   <td className="py-1.5 px-2 font-medium">
-                    {p.name} <StatusBadge status={p.status} />
+                    {p.name} <StatusBadge status={p.status ?? ""} />
                   </td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.OBP?.toFixed(3) ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.R ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.TB ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.RBI ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.SB ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.OBP?.toFixed(3) ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.R ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.TB ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.RBI ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.SB ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -131,13 +143,13 @@ export default function RosterPanel() {
                 <tr key={p.name} className={`border-t border-border ${i % 2 === 0 ? "" : "bg-surface/50"} ${p.position === "BN" || p.position === "DL" ? "opacity-60" : ""}`}>
                   <td className="py-1.5 px-2 text-muted font-medium">{p.position}</td>
                   <td className="py-1.5 px-2 font-medium">
-                    {p.name} <StatusBadge status={p.status} />
+                    {p.name} <StatusBadge status={p.status ?? ""} />
                   </td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.QS ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.SH ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.K ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.ERA?.toFixed(2) ?? "—"}</td>
-                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats.WHIP?.toFixed(2) ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.QS ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.SH ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.K ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.ERA?.toFixed(2) ?? "—"}</td>
+                  <td className="text-right py-1.5 px-2 tabular-nums">{p.stats?.WHIP?.toFixed(2) ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

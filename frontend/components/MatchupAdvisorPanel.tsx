@@ -28,7 +28,8 @@ const QUIET_VERDICTS = new Set([
   "not_starting",
 ]);
 
-function fmtStat(val: number): string {
+function fmtStat(val: number | null | undefined): string {
+  if (val == null) return "—";
   return val < 1 && val > 0 ? val.toFixed(3) : String(val);
 }
 
@@ -194,9 +195,9 @@ function ActionCard({
           <p className="text-[11px] text-gray-500 mt-1 leading-snug">
             {player.rationale}
           </p>
-          {player.impact.length > 0 && (
+          {(player.impact ?? []).length > 0 && (
             <div className="flex gap-1 mt-1.5">
-              {player.impact.map((cat) => (
+              {(player.impact ?? []).map((cat) => (
                 <span
                   key={cat}
                   className="text-[9px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded"
@@ -223,8 +224,8 @@ function ActionCard({
 function ActionItems({ data }: { data: MatchupAdvisorData }) {
   const actionItems: (MatchupPlayerAdvice & { game_label?: string })[] = [];
 
-  for (const game of data.games) {
-    for (const p of game.my_players) {
+  for (const game of (data.games ?? [])) {
+    for (const p of (game.my_players ?? [])) {
       if (ACTION_VERDICTS.has(p.verdict)) {
         actionItems.push({ ...p, game_label: game.game_label });
       }
@@ -429,8 +430,8 @@ function IntelModule({
   news: NewsData | null;
 }) {
   const [tab, setTab] = useState<"games" | "news">("games");
-  const gamesWithPlayers = data.games.filter(
-    (g) => g.my_players.length > 0 || g.opp_players.length > 0
+  const gamesWithPlayers = (data.games ?? []).filter(
+    (g) => (g.my_players ?? []).length > 0 || (g.opp_players ?? []).length > 0
   );
 
   return (
@@ -577,15 +578,18 @@ export default function MatchupAdvisorPanel() {
     );
   }
 
-  const hittingCats = data.category_analysis.filter((c) =>
+  const catAnalysis = data.category_analysis ?? [];
+  const games = data.games ?? [];
+
+  const hittingCats = catAnalysis.filter((c) =>
     ["OBP", "R", "TB", "RBI", "SB"].includes(c.category)
   );
-  const pitchingCats = data.category_analysis.filter((c) =>
+  const pitchingCats = catAnalysis.filter((c) =>
     ["QS", "SH", "K", "ERA", "WHIP"].includes(c.category)
   );
 
-  const actionCount = data.games.reduce(
-    (n, g) => n + g.my_players.filter((p) => ACTION_VERDICTS.has(p.verdict)).length,
+  const actionCount = games.reduce(
+    (n, g) => n + (g.my_players ?? []).filter((p) => ACTION_VERDICTS.has(p.verdict)).length,
     0
   );
 

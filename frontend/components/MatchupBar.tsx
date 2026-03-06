@@ -12,11 +12,12 @@ export default function MatchupBar() {
     api.matchup().then(setData).catch(console.error);
   }, []);
 
-  if (!data) return null;
+  if (!data || !data.category_results || !data.my_team || !data.opponent) return null;
 
-  const wins = Object.values(data.category_results).filter((v) => v === "winning").length;
-  const losses = Object.values(data.category_results).filter((v) => v === "losing").length;
-  const ties = Object.values(data.category_results).filter((v) => v === "tied").length;
+  const catResults = data.category_results ?? {};
+  const wins = Object.values(catResults).filter((v) => v === "winning").length;
+  const losses = Object.values(catResults).filter((v) => v === "losing").length;
+  const ties = Object.values(catResults).filter((v) => v === "tied").length;
 
   return (
     <div className="bg-white rounded-lg border border-border overflow-hidden">
@@ -43,21 +44,28 @@ export default function MatchupBar() {
       {/* Category-by-category */}
       <div className="divide-y divide-border">
         {ALL_CATS.map((cat) => {
-          const myStat = (data.my_team.stats as Record<string, number>)[cat];
-          const oppStat = (data.opponent.stats as Record<string, number>)[cat];
-          const result = data.category_results[cat] || "tied";
+          const myStats = (data.my_team.stats ?? {}) as Record<string, number>;
+          const oppStats = (data.opponent.stats ?? {}) as Record<string, number>;
+          const myStat = myStats[cat];
+          const oppStat = oppStats[cat];
+          const result = catResults[cat] || "tied";
           const cellClass = result === "winning" ? "cat-win" : result === "losing" ? "cat-lose" : "cat-tie";
+
+          const fmtStat = (v: number | undefined) => {
+            if (v == null) return "—";
+            return v < 1 && v > 0 ? v.toFixed(3) : v.toFixed(v % 1 === 0 ? 0 : 2);
+          };
 
           return (
             <div key={cat} className={`grid grid-cols-[1fr_auto_1fr] text-[12px] py-1 px-2 ${cellClass}`}>
               <span className={`tabular-nums ${result === "winning" ? "font-bold text-green-800" : ""}`}>
-                {myStat < 1 && myStat > 0 ? myStat.toFixed(3) : myStat?.toFixed(myStat % 1 === 0 ? 0 : 2)}
+                {fmtStat(myStat)}
               </span>
               <span className="text-[10px] text-muted font-semibold px-2 text-center w-10">
                 {cat === "SH" ? "S+H" : cat}
               </span>
               <span className={`tabular-nums text-right ${result === "losing" ? "font-bold text-red-800" : ""}`}>
-                {oppStat < 1 && oppStat > 0 ? oppStat.toFixed(3) : oppStat?.toFixed(oppStat % 1 === 0 ? 0 : 2)}
+                {fmtStat(oppStat)}
               </span>
             </div>
           );

@@ -51,13 +51,13 @@ export default function StandingsPanel() {
                     <td className="py-1.5 px-2 font-bold">{gap.category === "SH" ? "S+H" : gap.category}</td>
                     <td className="text-center py-1.5 px-2"><RankCell rank={gap.my_rank} /></td>
                     <td className="text-right py-1.5 px-2 tabular-nums">
-                      {gap.my_value < 1 && gap.my_value > 0 ? gap.my_value.toFixed(3) : gap.my_value.toFixed(gap.my_value % 1 === 0 ? 0 : 2)}
+                      {gap.my_value != null ? (gap.my_value < 1 && gap.my_value > 0 ? gap.my_value.toFixed(3) : gap.my_value.toFixed(gap.my_value % 1 === 0 ? 0 : 2)) : "—"}
                     </td>
                     <td className="text-right py-1.5 px-2 tabular-nums text-muted">
-                      {gap.league_avg < 1 && gap.league_avg > 0 ? gap.league_avg.toFixed(3) : gap.league_avg.toFixed(gap.league_avg % 1 === 0 ? 0 : 2)}
+                      {gap.league_avg != null ? (gap.league_avg < 1 && gap.league_avg > 0 ? gap.league_avg.toFixed(3) : gap.league_avg.toFixed(gap.league_avg % 1 === 0 ? 0 : 2)) : "—"}
                     </td>
                     <td className="text-right py-1.5 px-2 tabular-nums">
-                      {gap.gap_to_next < 1 && gap.gap_to_next > 0 ? gap.gap_to_next.toFixed(3) : gap.gap_to_next.toFixed(gap.gap_to_next % 1 === 0 ? 0 : 2)}
+                      {gap.gap_to_next != null ? (gap.gap_to_next < 1 && gap.gap_to_next > 0 ? gap.gap_to_next.toFixed(3) : gap.gap_to_next.toFixed(gap.gap_to_next % 1 === 0 ? 0 : 2)) : "—"}
                     </td>
                     <td className="text-center py-1.5 px-2">
                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
@@ -111,11 +111,11 @@ export default function StandingsPanel() {
                       {team.team_name}
                     </td>
                     <td className="text-center py-1.5 px-1.5 tabular-nums text-muted">
-                      {team.record.wins}-{team.record.losses}-{team.record.ties}
+                      {team.record ? `${team.record.wins}-${team.record.losses}-${team.record.ties}` : "—"}
                     </td>
                     {ALL_CATS.map((cat) => (
                       <td key={cat} className="text-center py-1.5 px-1">
-                        <RankCell rank={team.category_ranks[cat] || 0} />
+                        <RankCell rank={(team.category_ranks ?? {})[cat] || 0} />
                       </td>
                     ))}
                   </tr>
