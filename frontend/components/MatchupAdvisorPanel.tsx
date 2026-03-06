@@ -41,10 +41,14 @@ function Scoreboard({
   data,
   hittingCats,
   pitchingCats,
+  lastUpdate,
+  onRefresh,
 }: {
   data: MatchupAdvisorData;
   hittingCats: CategoryAnalysis[];
   pitchingCats: CategoryAnalysis[];
+  lastUpdate: Date | null;
+  onRefresh: () => void;
 }) {
   const { score } = data;
   const up = score.winning > score.losing;
@@ -75,8 +79,26 @@ function Scoreboard({
         </div>
       </div>
 
-      <div className="px-4 py-2 bg-surface/60 border-b border-border text-[12px] text-gray-600 leading-snug">
-        {data.summary}
+      <div className="px-4 py-2 bg-surface/60 border-b border-border flex items-start justify-between gap-3">
+        <span className="text-[12px] text-gray-600 leading-snug">
+          {data.summary}
+        </span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {lastUpdate && (
+            <span className="text-[9px] text-gray-400 tabular-nums">
+              {lastUpdate.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+          <button
+            onClick={onRefresh}
+            className="text-[9px] text-navy/60 hover:text-navy font-semibold uppercase tracking-wider transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-10 text-center text-[10px]">
@@ -505,16 +527,46 @@ function SectionLabel({
    MAIN PANEL
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
+const SCORE_POLL_MS = 90_000;    // scoreboard every 90s during games
+const ALERTS_POLL_MS = 120_000;  // alerts every 2 min
+const NEWS_POLL_MS = 300_000;    // news every 5 min
+
 export default function MatchupAdvisorPanel() {
   const [data, setData] = useState<MatchupAdvisorData | null>(null);
   const [alerts, setAlerts] = useState<CriticalAlert[]>([]);
   const [news, setNews] = useState<NewsData | null>(null);
   const [error, setError] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  const refreshScores = () => {
+    api.matchupAdvisor().then((d) => {
+      setData(d);
+      setLastUpdate(new Date());
+    }).catch(() => {});
+  };
 
   useEffect(() => {
-    api.matchupAdvisor().then(setData).catch(() => setError(true));
+    api.matchupAdvisor().then((d) => {
+      setData(d);
+      setLastUpdate(new Date());
+    }).catch(() => setError(true));
+
     api.alerts().then((d) => setAlerts(d.alerts)).catch(() => {});
     api.news().then(setNews).catch(() => {});
+
+    const scoreInterval = setInterval(refreshScores, SCORE_POLL_MS);
+    const alertsInterval = setInterval(() => {
+      api.alerts().then((d) => setAlerts(d.alerts)).catch(() => {});
+    }, ALERTS_POLL_MS);
+    const newsInterval = setInterval(() => {
+      api.news().then(setNews).catch(() => {});
+    }, NEWS_POLL_MS);
+
+    return () => {
+      clearInterval(scoreInterval);
+      clearInterval(alertsInterval);
+      clearInterval(newsInterval);
+    };
   }, []);
 
   if (error) {
@@ -552,6 +604,8 @@ export default function MatchupAdvisorPanel() {
         data={data}
         hittingCats={hittingCats}
         pitchingCats={pitchingCats}
+        lastUpdate={lastUpdate}
+        onRefresh={refreshScores}
       />
 
       {/* 1. Action Items */}
