@@ -75,11 +75,11 @@ TOOL_SEARCH_FA = {
 TOOL_MATCHUP = {
     "name": "get_matchup_analysis",
     "description": (
-        "Get this week's H2H category matchup — both teams' stats in all 10 "
-        "categories and which categories Ben is currently winning, losing, or "
-        "tied in. Use this to make tactical in-week decisions: which categories "
-        "to push for, which to protect, whether to stream or sit pitchers, "
-        "and where a single roster move could flip a category."
+        "Get the current Roto category standings — Ben's rank and value in all "
+        "10 categories across the league. Use this to identify which categories "
+        "to push for (ranked 6th-9th = best gain opportunity), which to protect "
+        "(top 3 = maintain lead), and where a roster move could gain Roto points. "
+        "Every rank gained = 1 more point in the final standings."
     ),
     "input_schema": {
         "type": "object",

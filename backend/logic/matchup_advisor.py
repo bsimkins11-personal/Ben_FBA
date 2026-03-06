@@ -1,7 +1,7 @@
-"""Matchup Advisor — game-by-game roster recommendations with rationale.
+"""Roster Advisor — game-by-game roster recommendations with rationale.
 
-Compares Ben's roster vs opponent's roster, cross-references today's
-MLB schedule, and generates category-aware start/sit/swap advice.
+Cross-references Ben's roster with today's MLB schedule and generates
+category-aware start/sit/swap advice for Roto optimization.
 No LLM calls — pure rule-based logic. Zero cost.
 """
 
@@ -387,24 +387,30 @@ def generate_matchup_advice(
     losing_flippable = [c for c in flippable_cats if c["status"] == "losing"]
     winning_close = [c for c in flippable_cats if c["status"] == "winning"]
 
-    if score_winning >= 6:
-        summary = (
-            f"You're up {score_winning}-{score_losing}. Protect the lead — "
-            f"avoid risky streams and lock in ratio categories."
-        )
-    elif score_winning >= 4 and losing_flippable:
+    top_cats = sum(1 for c in cat_analysis if c["status"] == "winning")
+    bottom_cats = sum(1 for c in cat_analysis if c["status"] == "losing")
+
+    if losing_flippable:
         flip_names = ", ".join(c["category"] for c in losing_flippable[:3])
         summary = (
-            f"Down {score_losing}-{score_winning}. Closest flip targets: "
-            f"**{flip_names}**. Focus roster moves there."
+            f"Top-half in {top_cats} categories, bottom-half in {bottom_cats}. "
+            f"Best rank-gain targets: **{flip_names}**. Focus roster moves there."
         )
-    elif score_winning <= 3:
+    elif top_cats >= 7:
         summary = (
-            f"Down {score_losing}-{score_winning}. Aggressive mode — "
-            f"stream starters, activate bench bats, chase volume categories."
+            f"Strong position — top-half in {top_cats} of 10 categories. "
+            f"Protect ratios and maintain counting stat volume."
+        )
+    elif bottom_cats >= 5:
+        summary = (
+            f"Behind in {bottom_cats} categories. Aggressive mode — "
+            f"activate bench bats, stream starters when ratio-safe, chase volume."
         )
     else:
-        summary = f"Matchup is tight at {score_winning}-{score_losing}. Every roster decision counts."
+        summary = (
+            f"Competitive across the board — {top_cats} categories in top half. "
+            f"Every stat counts. Maximize active roster spots."
+        )
 
     return {
         "week": matchup_data.get("week"),

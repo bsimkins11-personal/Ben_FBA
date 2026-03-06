@@ -1,4 +1,4 @@
-"""H2H category gap analysis for 5x5 Bush League."""
+"""Rotisserie category gap analysis for 5x5 Bush League."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def _priority_sort_key(priority: str) -> int:
 def analyze_category_gaps(
     my_ranks: dict, standings: list[dict]
 ) -> list[dict]:
-    """Compute per-category gap analysis from H2H standings.
+    """Compute per-category gap analysis from Roto standings.
 
     Parameters
     ----------

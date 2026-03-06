@@ -42,7 +42,7 @@ export default function Home() {
               <span className="text-mlb-red ml-2">Co-Pilot</span>
             </h1>
             <p className="text-white/60 text-xs md:text-sm mt-1">
-              Your AI-powered fantasy baseball advisor — H2H Categories
+              Your AI-powered fantasy baseball advisor — 5×5 Rotisserie
             </p>
           </div>
         </div>

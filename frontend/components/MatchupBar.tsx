@@ -1,71 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type MatchupData } from "@/lib/api";
+import { api, type StandingsData } from "@/lib/api";
 
 const ALL_CATS = ["OBP", "R", "TB", "RBI", "SB", "QS", "SH", "K", "ERA", "WHIP"];
 
 export default function MatchupBar() {
-  const [data, setData] = useState<MatchupData | null>(null);
+  const [data, setData] = useState<StandingsData | null>(null);
 
   useEffect(() => {
-    api.matchup().then(setData).catch(console.error);
+    api.standings().then(setData).catch(console.error);
   }, []);
 
-  if (!data || !data.category_results || !data.my_team || !data.opponent) return null;
+  if (!data || !data.gap_analysis || data.gap_analysis.length === 0) return null;
 
-  const catResults = data.category_results ?? {};
-  const wins = Object.values(catResults).filter((v) => v === "winning").length;
-  const losses = Object.values(catResults).filter((v) => v === "losing").length;
-  const ties = Object.values(catResults).filter((v) => v === "tied").length;
+  const topHalf = data.gap_analysis.filter((g) => g.my_rank <= Math.ceil((data.standings?.length || 11) / 2)).length;
 
   return (
     <div className="bg-white rounded-lg border border-border overflow-hidden">
       <div className="bg-navy px-3 py-2 flex items-center justify-between">
         <span className="text-white text-xs font-bold uppercase tracking-wider">
-          Week {data.week} Matchup
+          Roto Category Ranks
         </span>
         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-          wins > losses ? "bg-green-500/20 text-green-200" :
-          wins < losses ? "bg-red-500/20 text-red-200" :
-          "bg-yellow-500/20 text-yellow-200"
+          topHalf >= 6 ? "bg-green-500/20 text-green-200" :
+          topHalf >= 4 ? "bg-yellow-500/20 text-yellow-200" :
+          "bg-red-500/20 text-red-200"
         }`}>
-          {wins}-{losses}{ties > 0 ? `-${ties}` : ""}
+          {topHalf} of 10 top half
         </span>
       </div>
 
-      {/* Team names row */}
-      <div className="grid grid-cols-[1fr_auto_1fr] text-[11px] py-1.5 px-2 bg-surface border-b border-border">
-        <span className="font-bold text-navy">{data.my_team.team_name}</span>
-        <span className="text-muted px-2">vs</span>
-        <span className="font-bold text-right text-subtle">{data.opponent.team_name}</span>
-      </div>
-
-      {/* Category-by-category */}
       <div className="divide-y divide-border">
-        {ALL_CATS.map((cat) => {
-          const myStats = (data.my_team.stats ?? {}) as Record<string, number>;
-          const oppStats = (data.opponent.stats ?? {}) as Record<string, number>;
-          const myStat = myStats[cat];
-          const oppStat = oppStats[cat];
-          const result = catResults[cat] || "tied";
-          const cellClass = result === "winning" ? "cat-win" : result === "losing" ? "cat-lose" : "cat-tie";
+        {data.gap_analysis.map((gap) => {
+          const numTeams = data.standings?.length || 11;
+          const isTopHalf = gap.my_rank <= Math.ceil(numTeams / 2);
 
-          const fmtStat = (v: number | undefined) => {
+          const fmtVal = (v: number | undefined) => {
             if (v == null) return "—";
             return v < 1 && v > 0 ? v.toFixed(3) : v.toFixed(v % 1 === 0 ? 0 : 2);
           };
 
           return (
-            <div key={cat} className={`grid grid-cols-[1fr_auto_1fr] text-[12px] py-1 px-2 ${cellClass}`}>
-              <span className={`tabular-nums ${result === "winning" ? "font-bold text-green-800" : ""}`}>
-                {fmtStat(myStat)}
+            <div key={gap.category} className={`grid grid-cols-[auto_1fr_auto] text-[12px] py-1 px-2 ${
+              isTopHalf ? "cat-win" : "cat-lose"
+            }`}>
+              <span className="text-[10px] text-muted font-semibold w-10">
+                {gap.category === "SH" ? "S+H" : gap.category}
               </span>
-              <span className="text-[10px] text-muted font-semibold px-2 text-center w-10">
-                {cat === "SH" ? "S+H" : cat}
+              <span className={`tabular-nums text-center ${
+                isTopHalf ? "font-bold text-green-800" : "text-red-800"
+              }`}>
+                {fmtVal(gap.my_value)}
               </span>
-              <span className={`tabular-nums text-right ${result === "losing" ? "font-bold text-red-800" : ""}`}>
-                {fmtStat(oppStat)}
+              <span className={`text-[11px] font-bold w-8 text-right ${
+                gap.my_rank <= 3 ? "text-green-700" : gap.my_rank >= 8 ? "text-red-600" : "text-gray-500"
+              }`}>
+                {gap.my_rank}
               </span>
             </div>
           );

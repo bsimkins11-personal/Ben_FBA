@@ -52,11 +52,12 @@ function Scoreboard({
   onRefresh: () => void;
 }) {
   const { score } = data;
-  const up = score.winning > score.losing;
-  const even = score.winning === score.losing;
-  const scoreBg = up
+  const topHalf = score.winning;
+  const bottomHalf = score.losing;
+  const strong = topHalf >= 6;
+  const scoreBg = strong
     ? "bg-green-600"
-    : even
+    : topHalf >= 4
     ? "bg-amber-500"
     : "bg-red-600";
 
@@ -65,18 +66,18 @@ function Scoreboard({
       <div className="bg-navy-dark px-4 py-2.5 flex items-center justify-between">
         <div>
           <div className="text-white/50 text-[10px] font-semibold uppercase tracking-widest">
-            Week {data.week} · H2H Categories
+            5×5 Rotisserie · Season Standings
           </div>
           <div className="text-white text-sm font-bold mt-0.5">
-            {data.my_team}
-            <span className="text-white/30 mx-2 font-normal">vs</span>
-            {data.opponent}
+            {data.my_team || "Hebrew Hammers"}
           </div>
         </div>
-        <div
-          className={`${scoreBg} text-white text-lg font-black px-3 py-1 rounded-md tabular-nums`}
-        >
-          {score.winning}–{score.losing}
+        <div className="text-right">
+          <div
+            className={`${scoreBg} text-white text-sm font-black px-3 py-1 rounded-md tabular-nums`}
+          >
+            {topHalf} of 10 top half
+          </div>
         </div>
       </div>
 
@@ -122,13 +123,13 @@ function Scoreboard({
             >
               {fmtStat(c.my_value)}
             </div>
-            <div className="py-1 text-gray-400 tabular-nums border-t border-border">
-              {fmtStat(c.opp_value)}
+            <div className="py-1 text-[9px] text-gray-400 tabular-nums border-t border-border">
+              lg avg: {fmtStat(c.opp_value)}
             </div>
             {c.flippable && c.status === "losing" && (
               <div className="pb-1">
                 <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1 rounded">
-                  FLIP
+                  GAIN
                 </span>
               </div>
             )}
@@ -374,7 +375,7 @@ function GameRow({ game }: { game: MatchupGameGroup }) {
         </span>
         {hasBoth && (
           <span className="text-[8px] font-bold text-navy/60 bg-navy/5 px-1 py-0.5 rounded">
-            H2H
+            RIVAL
           </span>
         )}
         <span className="text-[10px] text-gray-400 tabular-nums">
