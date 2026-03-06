@@ -7,150 +7,169 @@ import {
   type MatchupGameGroup,
   type MatchupPlayerAdvice,
   type CategoryAnalysis,
+  type CriticalAlert,
+  type NewsData,
+  type NewsItem,
 } from "@/lib/api";
 
-const VERDICT_CONFIG: Record<
-  string,
-  { label: string; color: string; bg: string; icon: string }
-> = {
-  confirmed: {
-    label: "Locked In",
-    color: "text-green-800",
-    bg: "bg-green-50 border-green-200",
-    icon: "✓",
-  },
-  start: {
-    label: "Start",
-    color: "text-green-700",
-    bg: "bg-green-50/60 border-green-200",
-    icon: "▶",
-  },
-  caution: {
-    label: "Caution",
-    color: "text-amber-700",
-    bg: "bg-amber-50 border-amber-200",
-    icon: "⚠",
-  },
-  monitor: {
-    label: "Monitor",
-    color: "text-amber-600",
-    bg: "bg-amber-50/60 border-amber-200",
-    icon: "👁",
-  },
-  consider: {
-    label: "Consider",
-    color: "text-blue-700",
-    bg: "bg-blue-50 border-blue-200",
-    icon: "↑",
-  },
-  bench: {
-    label: "Bench",
-    color: "text-gray-500",
-    bg: "bg-gray-50 border-gray-200",
-    icon: "—",
-  },
-  out: {
-    label: "Out",
-    color: "text-red-600",
-    bg: "bg-red-50 border-red-200",
-    icon: "✕",
-  },
-  no_game: {
-    label: "Off Day",
-    color: "text-gray-400",
-    bg: "bg-gray-50/50 border-gray-100",
-    icon: "○",
-  },
-  not_starting: {
-    label: "Not Starting",
-    color: "text-gray-400",
-    bg: "bg-gray-50/50 border-gray-100",
-    icon: "○",
-  },
-};
+/* ── Helpers ─────────────────────────────────────────────────── */
 
-function ScoreBadge({ score }: { score: { winning: number; losing: number } }) {
-  const winning = score.winning >= 6;
-  const close = Math.abs(score.winning - score.losing) <= 2;
-  return (
-    <span
-      className={`text-sm font-black px-2.5 py-1 rounded-full ${
-        winning
-          ? "bg-green-100 text-green-800"
-          : close
-          ? "bg-amber-100 text-amber-800"
-          : "bg-red-100 text-red-800"
-      }`}
-    >
-      {score.winning}-{score.losing}
-    </span>
-  );
+const ACTION_VERDICTS = new Set([
+  "caution",
+  "monitor",
+  "consider",
+  "out",
+  "start",
+]);
+const QUIET_VERDICTS = new Set([
+  "confirmed",
+  "bench",
+  "no_game",
+  "not_starting",
+]);
+
+function fmtStat(val: number): string {
+  return val < 1 && val > 0 ? val.toFixed(3) : String(val);
 }
 
-function CategoryBar({ cat }: { cat: CategoryAnalysis }) {
-  const statusColor =
-    cat.status === "winning"
-      ? "text-green-700 bg-green-50"
-      : cat.status === "losing"
-      ? "text-red-600 bg-red-50"
-      : "text-gray-600 bg-gray-50";
-  const flipBadge = cat.flippable && cat.status === "losing";
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ZONE 1 — SCOREBOARD
+   Where you stand at a glance.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Scoreboard({
+  data,
+  hittingCats,
+  pitchingCats,
+}: {
+  data: MatchupAdvisorData;
+  hittingCats: CategoryAnalysis[];
+  pitchingCats: CategoryAnalysis[];
+}) {
+  const { score } = data;
+  const up = score.winning > score.losing;
+  const even = score.winning === score.losing;
+  const scoreBg = up
+    ? "bg-green-600"
+    : even
+    ? "bg-amber-500"
+    : "bg-red-600";
 
   return (
-    <div
-      className={`flex items-center justify-between px-2 py-1 rounded text-[11px] ${statusColor}`}
-    >
-      <span className="font-bold w-8">{cat.category}</span>
-      <span className="tabular-nums">
-        {typeof cat.my_value === "number" && cat.my_value < 1
-          ? cat.my_value.toFixed(3)
-          : cat.my_value}
-      </span>
-      <span className="text-[10px] text-gray-400">vs</span>
-      <span className="tabular-nums">
-        {typeof cat.opp_value === "number" && cat.opp_value < 1
-          ? cat.opp_value.toFixed(3)
-          : cat.opp_value}
-      </span>
-      {flipBadge && (
-        <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1 rounded">
-          FLIP
-        </span>
-      )}
+    <div className="bg-white rounded-lg border border-border overflow-hidden">
+      <div className="bg-navy-dark px-4 py-2.5 flex items-center justify-between">
+        <div>
+          <div className="text-white/50 text-[10px] font-semibold uppercase tracking-widest">
+            Week {data.week} · H2H Categories
+          </div>
+          <div className="text-white text-sm font-bold mt-0.5">
+            {data.my_team}
+            <span className="text-white/30 mx-2 font-normal">vs</span>
+            {data.opponent}
+          </div>
+        </div>
+        <div
+          className={`${scoreBg} text-white text-lg font-black px-3 py-1 rounded-md tabular-nums`}
+        >
+          {score.winning}–{score.losing}
+        </div>
+      </div>
+
+      <div className="px-4 py-2 bg-surface/60 border-b border-border text-[12px] text-gray-600 leading-snug">
+        {data.summary}
+      </div>
+
+      <div className="grid grid-cols-10 text-center text-[10px]">
+        {[...hittingCats, ...pitchingCats].map((c) => (
+          <div
+            key={c.category}
+            className="border-r border-border last:border-r-0"
+          >
+            <div className="py-1 bg-gray-50 font-bold text-gray-500 border-b border-border">
+              {c.category}
+            </div>
+            <div
+              className={`py-1.5 font-bold tabular-nums ${
+                c.status === "winning"
+                  ? "text-green-700 bg-green-50/50"
+                  : c.status === "losing"
+                  ? "text-red-600 bg-red-50/50"
+                  : "text-gray-500"
+              }`}
+            >
+              {fmtStat(c.my_value)}
+            </div>
+            <div className="py-1 text-gray-400 tabular-nums border-t border-border">
+              {fmtStat(c.opp_value)}
+            </div>
+            {c.flippable && c.status === "losing" && (
+              <div className="pb-1">
+                <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1 rounded">
+                  FLIP
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-function PlayerCard({ player }: { player: MatchupPlayerAdvice }) {
-  const cfg = VERDICT_CONFIG[player.verdict] || VERDICT_CONFIG.bench;
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ZONE 2 — ACTION ITEMS
+   Roster decisions that need your attention right now.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function ActionCard({
+  player,
+}: {
+  player: MatchupPlayerAdvice & { game_label?: string };
+}) {
+  const isCritical = player.verdict === "out" || player.verdict === "caution";
+  const borderColor = isCritical ? "border-l-red-500" : "border-l-amber-400";
+  const actionLabel =
+    player.verdict === "out"
+      ? "Replace"
+      : player.verdict === "caution"
+      ? "Review"
+      : player.verdict === "monitor"
+      ? "Watch"
+      : player.verdict === "consider"
+      ? "Activate"
+      : "Decide";
+
+  const actionColor =
+    player.verdict === "out"
+      ? "text-red-600 border-red-200 bg-red-50"
+      : player.verdict === "caution"
+      ? "text-amber-700 border-amber-200 bg-amber-50"
+      : "text-blue-700 border-blue-200 bg-blue-50";
+
   return (
-    <div className={`p-2.5 rounded border ${cfg.bg}`}>
-      <div className="flex items-start gap-2">
-        <span className="text-base mt-0.5 flex-shrink-0 w-5 text-center">
-          {cfg.icon}
-        </span>
+    <div
+      className={`bg-white rounded-md border border-border border-l-[3px] ${borderColor} p-3`}
+    >
+      <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[13px] font-semibold">{player.name}</span>
-            <span className="text-[10px] text-muted font-medium">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px] font-bold">{player.name}</span>
+            <span className="text-[10px] text-muted">
               {player.position} · {player.mlb_team}
             </span>
             {player.status && (
               <span
-                className={`text-[9px] font-bold px-1 py-0.5 rounded ${
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                   player.status.startsWith("IL")
-                    ? "bg-red-600 text-white"
-                    : "bg-amber-500 text-white"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-amber-100 text-amber-700"
                 }`}
               >
                 {player.status}
               </span>
             )}
-            <span className={`text-[10px] font-bold uppercase ${cfg.color}`}>
-              {cfg.label}
-            </span>
           </div>
-          <p className="text-[11px] text-gray-600 mt-1 leading-snug">
+          <p className="text-[11px] text-gray-500 mt-1 leading-snug">
             {player.rationale}
           </p>
           {player.impact.length > 0 && (
@@ -158,7 +177,7 @@ function PlayerCard({ player }: { player: MatchupPlayerAdvice }) {
               {player.impact.map((cat) => (
                 <span
                   key={cat}
-                  className="text-[9px] font-bold bg-navy/10 text-navy px-1.5 py-0.5 rounded"
+                  className="text-[9px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded"
                 >
                   {cat}
                 </span>
@@ -166,105 +185,336 @@ function PlayerCard({ player }: { player: MatchupPlayerAdvice }) {
             </div>
           )}
         </div>
+        <span
+          className={`text-[10px] font-bold px-2 py-1 rounded border flex-shrink-0 ${actionColor}`}
+        >
+          {actionLabel}
+        </span>
       </div>
+      {player.game_label && (
+        <div className="text-[10px] text-muted mt-1.5">{player.game_label}</div>
+      )}
     </div>
   );
 }
 
-function GameCard({ game }: { game: MatchupGameGroup }) {
-  const hasBothSides = game.my_players.length > 0 && game.opp_players.length > 0;
-  const hasAction = game.my_players.some(
-    (p) => !["confirmed", "bench", "no_game", "not_starting"].includes(p.verdict)
+function ActionItems({ data }: { data: MatchupAdvisorData }) {
+  const actionItems: (MatchupPlayerAdvice & { game_label?: string })[] = [];
+
+  for (const game of data.games) {
+    for (const p of game.my_players) {
+      if (ACTION_VERDICTS.has(p.verdict)) {
+        actionItems.push({ ...p, game_label: game.game_label });
+      }
+    }
+  }
+
+  if (actionItems.length === 0) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-[12px] text-green-800 font-medium">
+        Lineup looks good — no moves needed right now.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {actionItems.map((p) => (
+        <ActionCard key={`${p.name}-${p.verdict}`} player={p} />
+      ))}
+    </div>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ZONE 3 — ALERTS
+   IL moves, DTD starters, must-grab free agents.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function AlertCard({ alert }: { alert: CriticalAlert }) {
+  const isCritical = alert.severity === "critical";
+  const iconBg = isCritical ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600";
+  const icon =
+    alert.type === "injury" ? "+" : alert.type === "pickup" ? "↑" : "!";
+  const actionColor = isCritical
+    ? "text-red-600 border-red-200 bg-red-50"
+    : "text-amber-700 border-amber-200 bg-amber-50";
+
+  return (
+    <div className="flex items-start gap-2.5 px-3 py-2.5 border-b border-border last:border-b-0">
+      <span
+        className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-0.5 ${iconBg}`}
+      >
+        {icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[12px] font-semibold text-gray-800">
+          {alert.headline}
+        </div>
+        <div className="text-[10px] text-gray-500 mt-0.5 leading-snug line-clamp-2">
+          {alert.detail}
+        </div>
+      </div>
+      <span
+        className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${actionColor}`}
+      >
+        {alert.action}
+      </span>
+    </div>
+  );
+}
+
+function AlertsModule({ alerts }: { alerts: CriticalAlert[] }) {
+  if (alerts.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-lg border border-border overflow-hidden">
+      {alerts.map((a, i) => (
+        <AlertCard key={`${a.type}-${a.player}-${i}`} alert={a} />
+      ))}
+    </div>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ZONE 4 — INTEL & NEWS
+   Game monitor, MLB news, scouting notes.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+const NEWS_ICONS: Record<string, string> = {
+  injury: "🏥",
+  transaction: "📋",
+  pitching: "⚾",
+  schedule: "📅",
+  callup: "🔼",
+  news: "📰",
+};
+
+function NewsRow({ item }: { item: NewsItem }) {
+  const icon = NEWS_ICONS[item.icon] || "📰";
+  const isRoster = item.roster_tag === "my_roster";
+  const isOpp = item.roster_tag === "opponent";
+
+  return (
+    <div className="flex items-start gap-2 px-3 py-2 border-b border-border last:border-b-0 hover:bg-gray-50/50">
+      <span className="text-sm flex-shrink-0 mt-0.5">{icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          {isRoster && (
+            <span className="text-[8px] font-bold bg-navy text-white px-1 py-0.5 rounded uppercase">
+              Roster
+            </span>
+          )}
+          {isOpp && (
+            <span className="text-[8px] font-bold bg-gray-500 text-white px-1 py-0.5 rounded uppercase">
+              Opp
+            </span>
+          )}
+          <span className="text-[11px] font-semibold text-gray-800 truncate">
+            {item.headline}
+          </span>
+        </div>
+        {item.detail && item.type !== "start_today" && (
+          <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">
+            {item.detail}
+          </p>
+        )}
+      </div>
+      {item.source && (
+        <span className="text-[9px] text-gray-300 flex-shrink-0">
+          {item.source}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function GameRow({ game }: { game: MatchupGameGroup }) {
+  const [open, setOpen] = useState(false);
+  const hasBoth =
+    game.my_players.length > 0 && game.opp_players.length > 0;
+  const mine = game.my_players.filter(
+    (p) => !ACTION_VERDICTS.has(p.verdict)
+  );
+
+  return (
+    <div className="border-b border-border last:border-b-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50/50 transition-colors text-left"
+      >
+        <span className="text-[9px] text-gray-300 w-3">
+          {open ? "▾" : "▸"}
+        </span>
+        <span className="text-[11px] font-semibold text-gray-700 flex-1">
+          {game.game_label}
+        </span>
+        {hasBoth && (
+          <span className="text-[8px] font-bold text-navy/60 bg-navy/5 px-1 py-0.5 rounded">
+            H2H
+          </span>
+        )}
+        <span className="text-[10px] text-gray-400 tabular-nums">
+          {mine.length} player{mine.length !== 1 ? "s" : ""}
+        </span>
+      </button>
+      {open && (
+        <div className="pb-1.5 pl-6 pr-3 space-y-0">
+          {mine.map((p) => (
+            <div
+              key={p.name}
+              className="flex items-center gap-2 py-0.5 text-[10px] text-gray-600"
+            >
+              <span className="w-6 text-gray-400">{p.position}</span>
+              <span className="flex-1">{p.name}</span>
+              <span className="text-gray-400">{p.mlb_team}</span>
+              <span className="text-green-600 text-[9px]">✓</span>
+            </div>
+          ))}
+          {game.opp_players.length > 0 && (
+            <>
+              <div className="text-[8px] text-gray-300 uppercase tracking-wider pt-1 pb-0.5 font-semibold">
+                Opponent
+              </div>
+              {game.opp_players.map((p) => (
+                <div
+                  key={p.name}
+                  className="flex items-center gap-2 py-0.5 text-[10px] text-gray-400"
+                >
+                  <span className="w-6">{p.position}</span>
+                  <span className="flex-1">{p.name}</span>
+                  <span>{p.mlb_team}</span>
+                  {p.status && (
+                    <span className="text-[8px] font-bold text-amber-400">
+                      {p.status}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IntelModule({
+  data,
+  news,
+}: {
+  data: MatchupAdvisorData;
+  news: NewsData | null;
+}) {
+  const [tab, setTab] = useState<"games" | "news">("games");
+  const gamesWithPlayers = data.games.filter(
+    (g) => g.my_players.length > 0 || g.opp_players.length > 0
   );
 
   return (
     <div className="bg-white rounded-lg border border-border overflow-hidden">
-      {/* Game Header */}
-      <div
-        className={`px-3 py-2 flex items-center justify-between ${
-          hasBothSides ? "bg-navy-dark" : "bg-gray-700"
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-white text-xs font-bold">
-            {game.game_label}
-          </span>
-          {hasBothSides && (
-            <span className="text-[9px] font-bold bg-amber-400 text-navy px-1.5 py-0.5 rounded">
-              HEAD TO HEAD
-            </span>
-          )}
-          {hasAction && (
-            <span className="text-[9px] font-bold bg-mlb-red text-white px-1.5 py-0.5 rounded">
-              ACTION
-            </span>
-          )}
-        </div>
-        {game.venue && (
-          <span className="text-white/40 text-[10px]">{game.venue}</span>
-        )}
+      <div className="flex items-center border-b border-border">
+        <button
+          onClick={() => setTab("games")}
+          className={`flex-1 text-[11px] font-bold uppercase tracking-wider py-2 transition-colors ${
+            tab === "games"
+              ? "text-navy border-b-2 border-navy"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          Games ({gamesWithPlayers.length})
+        </button>
+        <button
+          onClick={() => setTab("news")}
+          className={`flex-1 text-[11px] font-bold uppercase tracking-wider py-2 transition-colors ${
+            tab === "news"
+              ? "text-navy border-b-2 border-navy"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          News {news ? `(${news.total_items})` : ""}
+        </button>
       </div>
 
-      {/* Probable Pitchers */}
-      {(game.away_pitcher || game.home_pitcher) &&
-        game.away_pitcher !== "TBD" && (
-          <div className="px-3 py-1.5 bg-surface/50 border-b border-border text-[10px] text-muted">
-            <span className="font-medium">Probable:</span>{" "}
-            {game.away_pitcher} vs {game.home_pitcher}
-          </div>
+      <div className="max-h-[400px] overflow-y-auto">
+        {tab === "games" && (
+          <>
+            {gamesWithPlayers.length === 0 ? (
+              <div className="p-4 text-center text-[11px] text-muted">
+                No games with roster interest today
+              </div>
+            ) : (
+              gamesWithPlayers.map((g, i) => <GameRow key={i} game={g} />)
+            )}
+          </>
         )}
 
-      <div className="p-2 space-y-1.5">
-        {/* Ben's players */}
-        {game.my_players.map((p) => (
-          <PlayerCard key={p.name} player={p} />
-        ))}
-
-        {/* Opponent's players */}
-        {game.opp_players.length > 0 && (
-          <div className="mt-1 pt-1 border-t border-dashed border-gray-200">
-            <span className="text-[10px] font-bold text-muted uppercase tracking-wider px-1">
-              Opponent
-            </span>
-            {game.opp_players.map((p) => (
-              <div
-                key={p.name}
-                className="flex items-center gap-2 px-2 py-1 text-[11px] text-gray-500"
-              >
-                <span className="w-5 text-center text-[10px]">👤</span>
-                <span className="font-medium">{p.name}</span>
-                <span className="text-[10px]">
-                  {p.position} · {p.mlb_team}
-                </span>
-                {p.status && (
-                  <span
-                    className={`text-[9px] font-bold px-1 py-0.5 rounded ${
-                      p.status.startsWith("IL")
-                        ? "bg-red-100 text-red-600"
-                        : "bg-amber-100 text-amber-600"
-                    }`}
-                  >
-                    {p.status}
-                  </span>
-                )}
+        {tab === "news" && (
+          <>
+            {!news || news.items.length === 0 ? (
+              <div className="p-4 text-center text-[11px] text-muted">
+                No news updates
               </div>
-            ))}
-          </div>
+            ) : (
+              news.items.map((item, i) => <NewsRow key={i} item={item} />)
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION HEADER
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function SectionLabel({
+  number,
+  title,
+  count,
+  accent,
+}: {
+  number: string;
+  title: string;
+  count?: number;
+  accent?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-1 py-1">
+      <span
+        className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-black text-white ${
+          accent || "bg-navy"
+        }`}
+      >
+        {number}
+      </span>
+      <span className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
+        {title}
+      </span>
+      {count !== undefined && count > 0 && (
+        <span className="text-[10px] text-muted bg-gray-100 px-1.5 py-0.5 rounded-full tabular-nums">
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MAIN PANEL
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 export default function MatchupAdvisorPanel() {
   const [data, setData] = useState<MatchupAdvisorData | null>(null);
+  const [alerts, setAlerts] = useState<CriticalAlert[]>([]);
+  const [news, setNews] = useState<NewsData | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    api
-      .matchupAdvisor()
-      .then(setData)
-      .catch(() => setError(true));
+    api.matchupAdvisor().then(setData).catch(() => setError(true));
+    api.alerts().then((d) => setAlerts(d.alerts)).catch(() => {});
+    api.news().then(setNews).catch(() => {});
   }, []);
 
   if (error) {
@@ -283,18 +533,6 @@ export default function MatchupAdvisorPanel() {
     );
   }
 
-  const actionGames = data.games.filter((g) =>
-    g.my_players.some(
-      (p) => !["confirmed", "bench", "no_game", "not_starting"].includes(p.verdict)
-    )
-  );
-  const steadyGames = data.games.filter(
-    (g) => !actionGames.includes(g) && g.my_players.length > 0
-  );
-  const oppOnlyGames = data.games.filter(
-    (g) => g.my_players.length === 0 && g.opp_players.length > 0
-  );
-
   const hittingCats = data.category_analysis.filter((c) =>
     ["OBP", "R", "TB", "RBI", "SB"].includes(c.category)
   );
@@ -302,77 +540,52 @@ export default function MatchupAdvisorPanel() {
     ["QS", "SH", "K", "ERA", "WHIP"].includes(c.category)
   );
 
-  return (
-    <div className="space-y-3">
-      {/* Scoreboard + Summary */}
-      <div className="bg-white rounded-lg border border-border overflow-hidden">
-        <div className="bg-navy px-3 py-2 flex items-center justify-between">
-          <span className="text-white text-xs font-bold uppercase tracking-wider">
-            Week {data.week} Matchup Advisor
-          </span>
-          <ScoreBadge score={data.score} />
-        </div>
-        <div className="px-3 py-2 border-b border-border">
-          <div className="flex items-center justify-between text-[12px] font-semibold">
-            <span>{data.my_team}</span>
-            <span className="text-muted text-[10px]">vs</span>
-            <span>{data.opponent}</span>
-          </div>
-        </div>
-        <div className="px-3 py-2 text-[12px] text-gray-700 bg-surface/30">
-          {data.summary}
-        </div>
+  const actionCount = data.games.reduce(
+    (n, g) => n + g.my_players.filter((p) => ACTION_VERDICTS.has(p.verdict)).length,
+    0
+  );
 
-        {/* Category Scoreboard */}
-        <div className="grid grid-cols-2 gap-px bg-border">
-          <div className="bg-white p-2 space-y-0.5">
-            {hittingCats.map((c) => (
-              <CategoryBar key={c.category} cat={c} />
-            ))}
-          </div>
-          <div className="bg-white p-2 space-y-0.5">
-            {pitchingCats.map((c) => (
-              <CategoryBar key={c.category} cat={c} />
-            ))}
-          </div>
-        </div>
+  return (
+    <div className="space-y-4">
+      {/* Scoreboard */}
+      <Scoreboard
+        data={data}
+        hittingCats={hittingCats}
+        pitchingCats={pitchingCats}
+      />
+
+      {/* 1. Action Items */}
+      <div className="space-y-2">
+        <SectionLabel
+          number="1"
+          title="Action Items"
+          count={actionCount}
+          accent={actionCount > 0 ? "bg-amber-500" : "bg-green-600"}
+        />
+        <ActionItems data={data} />
       </div>
 
-      {/* Action Required */}
-      {actionGames.length > 0 && (
+      {/* 2. Alerts */}
+      {alerts.length > 0 && (
         <div className="space-y-2">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-mlb-red px-1">
-            Action Required
-          </div>
-          {actionGames.map((g, i) => (
-            <GameCard key={i} game={g} />
-          ))}
+          <SectionLabel
+            number="2"
+            title="Alerts"
+            count={alerts.length}
+            accent="bg-red-500"
+          />
+          <AlertsModule alerts={alerts} />
         </div>
       )}
 
-      {/* Lineup Confirmed */}
-      {steadyGames.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-green-700 px-1">
-            Lineup Confirmed
-          </div>
-          {steadyGames.map((g, i) => (
-            <GameCard key={i} game={g} />
-          ))}
-        </div>
-      )}
-
-      {/* Opponent Activity */}
-      {oppOnlyGames.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-muted px-1">
-            Opponent Activity
-          </div>
-          {oppOnlyGames.map((g, i) => (
-            <GameCard key={i} game={g} />
-          ))}
-        </div>
-      )}
+      {/* 3. Intel & News */}
+      <div className="space-y-2">
+        <SectionLabel
+          number={alerts.length > 0 ? "3" : "2"}
+          title="Intel & News"
+        />
+        <IntelModule data={data} news={news} />
+      </div>
     </div>
   );
 }

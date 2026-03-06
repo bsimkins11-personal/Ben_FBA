@@ -7,15 +7,12 @@ import RosterPanel from "@/components/RosterPanel";
 import StandingsPanel from "@/components/StandingsPanel";
 import WaiverPanel from "@/components/WaiverPanel";
 import KeeperPanel from "@/components/KeeperPanel";
-import NewsPanel from "@/components/NewsPanel";
 import MatchupAdvisorPanel from "@/components/MatchupAdvisorPanel";
 import MatchupBar from "@/components/MatchupBar";
-import CriticalAlertBanner from "@/components/CriticalAlertBanner";
 
 const TABS = [
+  { id: "matchup", label: "Command Center" },
   { id: "roster", label: "Roster" },
-  { id: "matchup", label: "Matchup" },
-  { id: "news", label: "News" },
   { id: "standings", label: "Standings" },
   { id: "waivers", label: "Waivers" },
   { id: "keepers", label: "Keepers" },
@@ -28,7 +25,6 @@ export default function Home() {
 
   return (
     <div className="min-h-[calc(100vh-48px)]">
-      <CriticalAlertBanner />
       {/* Hero Banner */}
       <div className="relative h-36 md:h-44 overflow-hidden bg-navy-dark">
         <Image
@@ -79,9 +75,8 @@ export default function Home() {
 
             {/* Active Panel */}
             <div>
-              {activeTab === "roster" && <RosterPanel />}
               {activeTab === "matchup" && <MatchupAdvisorPanel />}
-              {activeTab === "news" && <NewsPanel />}
+              {activeTab === "roster" && <RosterPanel />}
               {activeTab === "standings" && <StandingsPanel />}
               {activeTab === "waivers" && <WaiverPanel />}
               {activeTab === "keepers" && <KeeperPanel />}
