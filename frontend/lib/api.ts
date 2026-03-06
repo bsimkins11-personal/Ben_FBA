@@ -105,6 +105,46 @@ export interface KeeperData {
   keepers: KeeperEntry[];
 }
 
+export interface MatchupPlayerAdvice {
+  name: string;
+  position: string;
+  mlb_team: string;
+  status: string;
+  verdict: "confirmed" | "start" | "caution" | "monitor" | "consider" | "bench" | "out" | "no_game" | "not_starting";
+  rationale: string;
+  impact: string[];
+}
+
+export interface MatchupGameGroup {
+  game_label: string;
+  venue: string;
+  status: string;
+  away_pitcher: string;
+  home_pitcher: string;
+  my_players: MatchupPlayerAdvice[];
+  opp_players: Array<{ name: string; position: string; mlb_team: string; status: string }>;
+}
+
+export interface CategoryAnalysis {
+  category: string;
+  my_value: number;
+  opp_value: number;
+  margin: number;
+  status: "winning" | "losing" | "tied";
+  flippable: boolean;
+}
+
+export interface MatchupAdvisorData {
+  week: number;
+  my_team: string;
+  opponent: string;
+  score: { winning: number; losing: number; tied: number };
+  summary: string;
+  category_analysis: CategoryAnalysis[];
+  games: MatchupGameGroup[];
+  date: string;
+}
+
 export interface NewsItem {
   type: string;
   priority: "high" | "medium" | "low";
@@ -115,6 +155,7 @@ export interface NewsItem {
   date: string;
   source: string;
   url?: string;
+  roster_tag?: "my_roster" | "opponent" | "";
 }
 
 export interface NewsData {
@@ -131,6 +172,7 @@ export const api = {
   freeAgents: (pos?: string) =>
     fetchJSON<WaiverData>(`/api/free-agents${pos ? `?position=${pos}` : ""}`),
   keepers: () => fetchJSON<KeeperData>("/api/keepers"),
+  matchupAdvisor: () => fetchJSON<MatchupAdvisorData>("/api/matchup/advisor"),
   news: () => fetchJSON<NewsData>("/api/news"),
 };
 

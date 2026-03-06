@@ -8,11 +8,13 @@ import StandingsPanel from "@/components/StandingsPanel";
 import WaiverPanel from "@/components/WaiverPanel";
 import KeeperPanel from "@/components/KeeperPanel";
 import NewsPanel from "@/components/NewsPanel";
+import MatchupAdvisorPanel from "@/components/MatchupAdvisorPanel";
 import MatchupBar from "@/components/MatchupBar";
 
 const TABS = [
-  { id: "news", label: "News" },
   { id: "roster", label: "Roster" },
+  { id: "matchup", label: "Matchup" },
+  { id: "news", label: "News" },
   { id: "standings", label: "Standings" },
   { id: "waivers", label: "Waivers" },
   { id: "keepers", label: "Keepers" },
@@ -21,7 +23,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabId>("news");
+  const [activeTab, setActiveTab] = useState<TabId>("matchup");
 
   return (
     <div className="min-h-[calc(100vh-48px)]">
@@ -75,8 +77,9 @@ export default function Home() {
 
             {/* Active Panel */}
             <div>
-              {activeTab === "news" && <NewsPanel />}
               {activeTab === "roster" && <RosterPanel />}
+              {activeTab === "matchup" && <MatchupAdvisorPanel />}
+              {activeTab === "news" && <NewsPanel />}
               {activeTab === "standings" && <StandingsPanel />}
               {activeTab === "waivers" && <WaiverPanel />}
               {activeTab === "keepers" && <KeeperPanel />}

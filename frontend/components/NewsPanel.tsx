@@ -24,7 +24,8 @@ function NewsCard({ item }: { item: NewsItem }) {
   const icon = ICON_MAP[item.icon] || "📰";
   const style = PRIORITY_STYLES[item.priority] || "";
 
-  const isRosterPlayer = item.priority === "high" && item.player;
+  const isMyRoster = item.roster_tag === "my_roster";
+  const isOpponent = item.roster_tag === "opponent";
 
   return (
     <div className={`p-3 rounded-md ${style} transition-all hover:shadow-sm`}>
@@ -32,9 +33,14 @@ function NewsCard({ item }: { item: NewsItem }) {
         <span className="text-lg flex-shrink-0 mt-0.5">{icon}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            {isRosterPlayer && (
+            {isMyRoster && (
               <span className="text-[9px] font-bold uppercase tracking-wider bg-mlb-red text-white px-1.5 py-0.5 rounded">
                 Your Roster
+              </span>
+            )}
+            {isOpponent && (
+              <span className="text-[9px] font-bold uppercase tracking-wider bg-gray-700 text-white px-1.5 py-0.5 rounded">
+                Opponent
               </span>
             )}
             {item.type === "start_today" && (
@@ -80,9 +86,9 @@ function NewsCard({ item }: { item: NewsItem }) {
 export default function NewsPanel() {
   const [data, setData] = useState<NewsData | null>(null);
   const [error, setError] = useState(false);
-  const [filter, setFilter] = useState<"all" | "roster" | "waiver" | "news">(
-    "all"
-  );
+  const [filter, setFilter] = useState<
+    "all" | "roster" | "opponent" | "waiver" | "news"
+  >("all");
 
   useEffect(() => {
     api
@@ -110,6 +116,7 @@ export default function NewsPanel() {
   const filters = [
     { id: "all" as const, label: "All" },
     { id: "roster" as const, label: "My Roster" },
+    { id: "opponent" as const, label: "Opponent" },
     { id: "waiver" as const, label: "Waiver Intel" },
     { id: "news" as const, label: "Headlines" },
   ];
@@ -117,11 +124,9 @@ export default function NewsPanel() {
   const filtered = data.items.filter((item) => {
     if (filter === "all") return true;
     if (filter === "roster")
-      return (
-        item.type === "roster_alert" ||
-        item.type === "start_today" ||
-        (item.priority === "high" && item.player)
-      );
+      return item.roster_tag === "my_roster";
+    if (filter === "opponent")
+      return item.roster_tag === "opponent";
     if (filter === "waiver") return item.type === "waiver_intel";
     if (filter === "news") return item.type === "news";
     return true;

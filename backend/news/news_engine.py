@@ -18,6 +18,7 @@ from backend.api.mlb_live import (
 )
 from backend.api.web_search import search_news
 from backend.api.roster import get_my_roster
+from backend.api.player import get_matchup
 
 logger = logging.getLogger(__name__)
 
@@ -30,52 +31,75 @@ def _normalize(name: str) -> str:
     return name.strip().lower()
 
 
-def _match_roster_player(text: str, roster_names: set[str]) -> str | None:
-    """Check if any roster player name appears in a text string."""
+def _match_player(
+    text: str,
+    my_names: set[str],
+    opp_names: set[str],
+) -> tuple[str | None, str]:
+    """Check if a player from either roster appears in text.
+
+    Returns (matched_name, "my_roster" | "opponent" | "").
+    """
     text_lower = text.lower()
-    for name in roster_names:
+    for name in my_names:
         if name in text_lower:
-            return name
-    return None
+            return name, "my_roster"
+    for name in opp_names:
+        if name in text_lower:
+            return name, "opponent"
+    return None, ""
 
 
 async def _build_roster_alerts(
-    roster_names: set[str],
+    my_names: set[str],
+    opp_names: set[str],
     transactions: list[dict],
 ) -> list[dict]:
-    """Flag transactions that directly involve players on Ben's roster."""
+    """Flag transactions involving players on either roster."""
     alerts = []
     for txn in transactions:
         player_lower = _normalize(txn.get("player", ""))
-        if player_lower in roster_names:
-            alerts.append({
-                "type": "roster_alert",
-                "priority": "high",
-                "icon": "injury" if "disabled" in txn.get("type", "").lower()
-                        else "transaction",
-                "headline": txn["description"][:140],
-                "player": txn["player"],
-                "detail": txn["type"],
-                "date": txn.get("date", ""),
-                "source": "MLB Transactions",
-            })
+        if player_lower in my_names:
+            tag = "my_roster"
+            priority = "high"
+        elif player_lower in opp_names:
+            tag = "opponent"
+            priority = "medium"
+        else:
+            continue
+
+        alerts.append({
+            "type": "roster_alert",
+            "priority": priority,
+            "icon": "injury" if "disabled" in txn.get("type", "").lower()
+                    else "transaction",
+            "headline": txn["description"][:140],
+            "player": txn["player"],
+            "detail": txn["type"],
+            "date": txn.get("date", ""),
+            "source": "MLB Transactions",
+            "roster_tag": tag,
+        })
     return alerts
 
 
 async def _build_schedule_intel(
-    roster_names: set[str],
+    my_names: set[str],
+    opp_names: set[str],
     schedule: list[dict],
 ) -> list[dict]:
-    """Today's games with probable pitchers — flag any involving roster SPs."""
+    """Today's games with probable pitchers — flag pitchers from both rosters."""
     items = []
-    roster_pitchers_playing = []
+    pitcher_items = []
 
     for game in schedule:
         for side in ("away", "home"):
             pitcher = game.get(f"{side}_pitcher", "TBD")
-            if _normalize(pitcher) in roster_names:
-                opponent_side = "home" if side == "away" else "away"
-                roster_pitchers_playing.append({
+            pitcher_lower = _normalize(pitcher)
+            opponent_side = "home" if side == "away" else "away"
+
+            if pitcher_lower in my_names:
+                pitcher_items.append({
                     "type": "start_today",
                     "priority": "high",
                     "icon": "pitching",
@@ -87,6 +111,22 @@ async def _build_schedule_intel(
                     "detail": f"at {game.get('venue', '')}",
                     "date": date.today().isoformat(),
                     "source": "MLB Schedule",
+                    "roster_tag": "my_roster",
+                })
+            elif pitcher_lower in opp_names:
+                pitcher_items.append({
+                    "type": "start_today",
+                    "priority": "medium",
+                    "icon": "pitching",
+                    "headline": (
+                        f"Opponent's {pitcher} starts today vs "
+                        f"{game[f'{opponent_side}_team']}"
+                    ),
+                    "player": pitcher,
+                    "detail": f"at {game.get('venue', '')}",
+                    "date": date.today().isoformat(),
+                    "source": "MLB Schedule",
+                    "roster_tag": "opponent",
                 })
 
     if schedule:
@@ -104,7 +144,7 @@ async def _build_schedule_intel(
             "source": "MLB Schedule",
         })
 
-    return roster_pitchers_playing + items
+    return pitcher_items + items
 
 
 async def _build_waiver_intel(transactions: list[dict]) -> list[dict]:
@@ -153,8 +193,11 @@ def _is_mlb_article(title: str, snippet: str) -> bool:
     return not any(kw in combined for kw in _NON_MLB_KEYWORDS)
 
 
-async def _build_news_items(roster_names: set[str]) -> list[dict]:
-    """Fetch MLB fantasy baseball news, tag items that mention roster players."""
+async def _build_news_items(
+    my_names: set[str],
+    opp_names: set[str],
+) -> list[dict]:
+    """Fetch MLB fantasy baseball news, tag items from either roster."""
     try:
         articles = await search_news(
             "MLB fantasy baseball injury roster moves waiver wire",
@@ -173,8 +216,14 @@ async def _build_news_items(roster_names: set[str]) -> list[dict]:
             continue
 
         combined = f"{title} {snippet}"
-        matched_player = _match_roster_player(combined, roster_names)
-        priority = "high" if matched_player else "low"
+        matched_player, roster_tag = _match_player(combined, my_names, opp_names)
+
+        if roster_tag == "my_roster":
+            priority = "high"
+        elif roster_tag == "opponent":
+            priority = "medium"
+        else:
+            priority = "low"
 
         items.append({
             "type": "news",
@@ -186,6 +235,7 @@ async def _build_news_items(roster_names: set[str]) -> list[dict]:
             "date": article.get("published", ""),
             "source": article.get("source", ""),
             "url": article.get("url", ""),
+            "roster_tag": roster_tag,
         })
 
     return items[:8]
@@ -201,10 +251,29 @@ async def get_curated_news() -> dict:
     if _cache and (time.time() - _cache_ts) < CACHE_TTL:
         return _cache
 
-    roster_data = await get_my_roster()
-    roster_names = {
+    roster_data, matchup_data = await asyncio.gather(
+        get_my_roster(),
+        get_matchup(),
+        return_exceptions=True,
+    )
+
+    if isinstance(roster_data, Exception):
+        logger.warning("Roster fetch failed: %s", roster_data)
+        roster_data = {}
+    if isinstance(matchup_data, Exception):
+        logger.warning("Matchup fetch failed: %s", matchup_data)
+        matchup_data = {}
+
+    my_names = {
         _normalize(p.get("name", ""))
         for p in roster_data.get("roster", [])
+        if p.get("name")
+    }
+
+    opp_roster = matchup_data.get("opponent", {}).get("roster", [])
+    opp_names = {
+        _normalize(p.get("name", ""))
+        for p in opp_roster
         if p.get("name")
     }
 
@@ -223,10 +292,10 @@ async def get_curated_news() -> dict:
 
     roster_alerts, schedule_intel, waiver_intel, news_items = (
         await asyncio.gather(
-            _build_roster_alerts(roster_names, transactions),
-            _build_schedule_intel(roster_names, schedule),
+            _build_roster_alerts(my_names, opp_names, transactions),
+            _build_schedule_intel(my_names, opp_names, schedule),
             _build_waiver_intel(transactions),
-            _build_news_items(roster_names),
+            _build_news_items(my_names, opp_names),
             return_exceptions=True,
         )
     )

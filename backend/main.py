@@ -15,6 +15,8 @@ from backend.logic.waiver_ranker import rank_free_agents
 from backend.cache.league_cache import LeagueCache
 from backend.agent.copilot import stream_copilot_response
 from backend.news.news_engine import get_curated_news
+from backend.logic.matchup_advisor import generate_matchup_advice
+from backend.api.mlb_live import get_todays_schedule
 
 logging.basicConfig(level=logging.INFO)
 
@@ -109,6 +111,17 @@ async def api_keepers():
     )
     keepers = resolve_collisions(keepers, config.get("num_teams", 12))
     return {"keepers": keepers}
+
+
+@app.get("/api/matchup/advisor")
+async def api_matchup_advisor():
+    """Game-by-game matchup advice with per-player verdicts and rationale."""
+    matchup_data = await get_matchup()
+    try:
+        schedule = await get_todays_schedule()
+    except Exception:
+        schedule = []
+    return generate_matchup_advice(matchup_data, schedule)
 
 
 @app.get("/api/news")

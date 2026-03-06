@@ -6,7 +6,34 @@
     "stats": {
       "OBP": 0.334, "R": 42, "TB": 118, "RBI": 38, "SB": 6,
       "QS": 4, "SH": 11, "K": 67, "ERA": 3.81, "WHIP": 1.24
-    }
+    },
+    "roster": [
+      {"name": "William Contreras", "position": "C", "mlb_team": "MIL", "status": ""},
+      {"name": "Freddie Freeman", "position": "1B", "mlb_team": "LAD", "status": "DTD"},
+      {"name": "Marcus Semien", "position": "2B", "mlb_team": "TEX", "status": ""},
+      {"name": "Manny Machado", "position": "3B", "mlb_team": "SD", "status": ""},
+      {"name": "Willy Adames", "position": "SS", "mlb_team": "SF", "status": ""},
+      {"name": "Kyle Tucker", "position": "OF", "mlb_team": "HOU", "status": ""},
+      {"name": "Teoscar Hernandez", "position": "OF", "mlb_team": "LAD", "status": ""},
+      {"name": "Bryan Reynolds", "position": "OF", "mlb_team": "PIT", "status": ""},
+      {"name": "Tyler O'Neill", "position": "OF", "mlb_team": "BOS", "status": ""},
+      {"name": "Pete Alonso", "position": "CI", "mlb_team": "NYM", "status": ""},
+      {"name": "Ezequiel Tovar", "position": "MI", "mlb_team": "COL", "status": ""},
+      {"name": "Yandy Diaz", "position": "Util", "mlb_team": "TB", "status": ""},
+      {"name": "Josh Naylor", "position": "Util", "mlb_team": "CLE", "status": ""},
+      {"name": "Zack Wheeler", "position": "SP", "mlb_team": "PHI", "status": ""},
+      {"name": "Logan Webb", "position": "SP", "mlb_team": "SF", "status": ""},
+      {"name": "Dylan Cease", "position": "SP", "mlb_team": "SD", "status": ""},
+      {"name": "Joe Ryan", "position": "SP", "mlb_team": "MIN", "status": ""},
+      {"name": "Pablo Lopez", "position": "SP", "mlb_team": "MIN", "status": ""},
+      {"name": "Ryan Helsley", "position": "RP", "mlb_team": "STL", "status": ""},
+      {"name": "Andres Munoz", "position": "RP", "mlb_team": "SEA", "status": ""},
+      {"name": "Kirby Yates", "position": "RP", "mlb_team": "TEX", "status": ""},
+      {"name": "Robert Suarez", "position": "RP", "mlb_team": "SD", "status": ""},
+      {"name": "Carlos Estevez", "position": "RP", "mlb_team": "LAA", "status": ""},
+      {"name": "Luis Castillo", "position": "P", "mlb_team": "SEA", "status": ""},
+      {"name": "Tanner Scott", "position": "P", "mlb_team": "SD", "status": ""}
+    ]
   },
   "opponent": {
     "team_key": "mlb.l.12345.t.9",
@@ -14,7 +41,34 @@
     "stats": {
       "OBP": 0.321, "R": 45, "TB": 132, "RBI": 41, "SB": 9,
       "QS": 5, "SH": 8, "K": 72, "ERA": 3.55, "WHIP": 1.18
-    }
+    },
+    "roster": [
+      {"name": "Salvador Perez", "position": "C", "mlb_team": "KC", "status": ""},
+      {"name": "Vladimir Guerrero Jr.", "position": "1B", "mlb_team": "TOR", "status": ""},
+      {"name": "Ozzie Albies", "position": "2B", "mlb_team": "ATL", "status": ""},
+      {"name": "Jose Ramirez", "position": "3B", "mlb_team": "CLE", "status": ""},
+      {"name": "Corey Seager", "position": "SS", "mlb_team": "TEX", "status": ""},
+      {"name": "Juan Soto", "position": "OF", "mlb_team": "NYM", "status": ""},
+      {"name": "Yordan Alvarez", "position": "OF", "mlb_team": "HOU", "status": ""},
+      {"name": "Adolis Garcia", "position": "OF", "mlb_team": "TEX", "status": "DTD"},
+      {"name": "Jarren Duran", "position": "OF", "mlb_team": "BOS", "status": ""},
+      {"name": "Alex Bregman", "position": "CI", "mlb_team": "HOU", "status": ""},
+      {"name": "Gunnar Henderson", "position": "MI", "mlb_team": "BAL", "status": ""},
+      {"name": "Marcell Ozuna", "position": "Util", "mlb_team": "ATL", "status": ""},
+      {"name": "Elly De La Cruz", "position": "Util", "mlb_team": "CIN", "status": ""},
+      {"name": "Gerrit Cole", "position": "SP", "mlb_team": "NYY", "status": ""},
+      {"name": "Corbin Burnes", "position": "SP", "mlb_team": "BAL", "status": ""},
+      {"name": "Tyler Glasnow", "position": "SP", "mlb_team": "LAD", "status": ""},
+      {"name": "Shane McClanahan", "position": "SP", "mlb_team": "TB", "status": ""},
+      {"name": "Framber Valdez", "position": "SP", "mlb_team": "HOU", "status": ""},
+      {"name": "Devin Williams", "position": "RP", "mlb_team": "NYY", "status": ""},
+      {"name": "Emmanuel Clase", "position": "RP", "mlb_team": "CLE", "status": ""},
+      {"name": "Clay Holmes", "position": "RP", "mlb_team": "NYY", "status": ""},
+      {"name": "Alexis Diaz", "position": "RP", "mlb_team": "CIN", "status": ""},
+      {"name": "Paul Sewald", "position": "RP", "mlb_team": "ARI", "status": ""},
+      {"name": "Yoshinobu Yamamoto", "position": "P", "mlb_team": "LAD", "status": ""},
+      {"name": "Carlos Rodon", "position": "P", "mlb_team": "NYY", "status": ""}
+    ]
   },
   "category_results": {
     "OBP": "winning",

@@ -56,6 +56,13 @@ MLB_TEAM_IDS = {
     139, 140, 141, 142, 143, 144, 145, 146, 147, 158,  # NL + AL
 }
 
+_NON_MLB_TEAM_KEYWORDS = {
+    "united states", "dominican republic", "puerto rico", "venezuela",
+    "japan", "korea", "chinese taipei", "mexico", "cuba", "canada",
+    "great britain", "netherlands", "italy", "israel", "australia",
+    "colombia", "panama", "nicaragua", "czech republic", "brazil",
+}
+
 
 async def get_transactions(days: int = 5) -> list[dict]:
     """Recent MLB transactions: IL moves, call-ups, DFAs, trades, signings.
@@ -90,7 +97,11 @@ async def get_transactions(days: int = 5) -> list[dict]:
 
         team = t.get("team", {})
         team_id = team.get("id")
+        team_name_lower = team.get("name", "").lower()
+
         if team_id and team_id not in MLB_TEAM_IDS:
+            continue
+        if any(kw in team_name_lower for kw in _NON_MLB_TEAM_KEYWORDS):
             continue
 
         desc_lower = t.get("description", "").lower()
