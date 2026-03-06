@@ -2,8 +2,6 @@ import json
 import logging
 from pathlib import Path
 
-from backend.config import USE_SYNTHETIC_DATA
-
 logger = logging.getLogger(__name__)
 
 SYNTHETIC_DIR = Path(__file__).resolve().parent.parent / "synthetic"
@@ -35,11 +33,7 @@ class LeagueCache:
             self._load_synthetic()
 
     def _load_synthetic(self) -> None:
-        """Load all 6 synthetic JSON files into memory."""
-        if not USE_SYNTHETIC_DATA:
-            logger.info("Synthetic data disabled — skipping cache load")
-            return
-
+        """Load all 6 synthetic JSON files into memory (demo/fallback data)."""
         if not SYNTHETIC_DIR.is_dir():
             logger.warning("Synthetic directory not found: %s", SYNTHETIC_DIR)
             self._loaded = True
