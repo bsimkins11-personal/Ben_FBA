@@ -3,7 +3,7 @@ import logging
 
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 
 from backend.api.league import get_league_config
 from backend.api.roster import get_my_roster, get_roster_stats
@@ -18,6 +18,13 @@ from backend.news.news_engine import get_curated_news
 from backend.logic.matchup_advisor import generate_matchup_advice
 from backend.logic.critical_alerts import get_critical_alerts
 from backend.api.mlb_live import get_todays_schedule
+from backend.auth.yahoo_auth import (
+    get_login_url,
+    exchange_code,
+    get_token_store,
+)
+from backend.api.yahoo_client import discover_league
+from backend.config import FRONTEND_URL
 
 logging.basicConfig(level=logging.INFO)
 
@@ -43,6 +50,50 @@ async def health():
     return {"status": "ok", "version": "0.1.0"}
 
 
+# ── Yahoo OAuth Routes ──────────────────────────────────────────────
+
+
+@app.get("/auth/yahoo")
+async def auth_yahoo_login():
+    """Redirect user to Yahoo OAuth login page."""
+    url = get_login_url()
+    return RedirectResponse(url)
+
+
+@app.get("/auth/yahoo/callback")
+async def auth_yahoo_callback(code: str = "", state: str = "", error: str = ""):
+    """Handle Yahoo OAuth callback — exchange code, discover league, redirect."""
+    if error:
+        return RedirectResponse(f"{FRONTEND_URL}?auth=error&reason={error}")
+
+    try:
+        await exchange_code(code, state)
+        await discover_league()
+        return RedirectResponse(f"{FRONTEND_URL}?auth=success")
+    except Exception as e:
+        logging.getLogger(__name__).error("Yahoo OAuth callback failed: %s", e)
+        return RedirectResponse(f"{FRONTEND_URL}?auth=error&reason=token_exchange_failed")
+
+
+@app.get("/auth/status")
+async def auth_status():
+    """Return current authentication state for the frontend."""
+    store = get_token_store()
+    return {
+        "authenticated": store.is_authenticated,
+        "mode": "live" if store.is_authenticated else "synthetic",
+        "league_key": store.league_key,
+        "team_key": store.team_key,
+    }
+
+
+@app.post("/auth/logout")
+async def auth_logout():
+    """Clear stored tokens — reverts to synthetic data."""
+    get_token_store().clear()
+    return {"status": "logged_out", "mode": "synthetic"}
+
+
 @app.get("/api/league")
 async def api_league():
     return await get_league_config()
@@ -55,7 +106,13 @@ async def api_roster():
 
 @app.get("/api/standings")
 async def api_standings():
-    standings_data = LeagueCache().get_standings()
+    store = get_token_store()
+    if store.is_authenticated and store.league_key:
+        from backend.api import yahoo_client
+        standings_data = await yahoo_client.get_standings(store.league_key)
+    else:
+        standings_data = LeagueCache().get_standings()
+
     roster_data = await get_my_roster()
     my_ranks = roster_data.get("category_ranks", {})
     team_totals = [
@@ -79,7 +136,13 @@ async def api_matchup():
 async def api_free_agents(position: str | None = Query(None)):
     fa_data = await get_free_agents(position=position)
     roster_data = await get_my_roster()
-    standings_data = LeagueCache().get_standings()
+
+    store = get_token_store()
+    if store.is_authenticated and store.league_key:
+        from backend.api import yahoo_client
+        standings_data = await yahoo_client.get_standings(store.league_key)
+    else:
+        standings_data = LeagueCache().get_standings()
 
     my_ranks = roster_data.get("category_ranks", {})
     team_totals = [

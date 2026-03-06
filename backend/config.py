@@ -9,6 +9,11 @@ SYSTEM_PROMPT_TOKEN_BUDGET = 2000
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 YAHOO_CLIENT_ID = os.getenv("YAHOO_CLIENT_ID", "")
 YAHOO_CLIENT_SECRET = os.getenv("YAHOO_CLIENT_SECRET", "")
+YAHOO_REDIRECT_URI = os.getenv(
+    "YAHOO_REDIRECT_URI",
+    "https://benfba-production.up.railway.app/auth/yahoo/callback",
+)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://benfba.vercel.app")
 
 YAHOO_STAT_IDS = {
     "OBP": 13,

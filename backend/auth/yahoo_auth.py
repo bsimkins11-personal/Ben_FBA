@@ -1,28 +1,164 @@
-"""Yahoo OAuth 2.0 PKCE — wired in Phase 4.
+"""Yahoo OAuth 2.0 Authorization Code flow.
 
-Token storage uses environment variables (Railway is ephemeral).
+Single-user token store (in-memory). On Railway redeploy Ben just
+re-authenticates — takes 10 seconds via the Yahoo login button.
 """
 
-from backend.config import YAHOO_CLIENT_ID, YAHOO_CLIENT_SECRET
+from __future__ import annotations
+
+import base64
+import logging
+import time
+import uuid
+from urllib.parse import urlencode
+
+import httpx
+
+from backend.config import (
+    YAHOO_CLIENT_ID,
+    YAHOO_CLIENT_SECRET,
+    YAHOO_REDIRECT_URI,
+)
+
+logger = logging.getLogger(__name__)
 
 YAHOO_AUTH_URL = "https://api.login.yahoo.com/oauth2/request_auth"
 YAHOO_TOKEN_URL = "https://api.login.yahoo.com/oauth2/get_token"
 
+YAHOO_SCOPE = "fspt-r"
 
-class YahooAuth:
-    """Placeholder for Yahoo OAuth 2.0 PKCE flow."""
+
+class YahooTokenStore:
+    """In-memory token store for a single user (Ben)."""
 
     def __init__(self) -> None:
-        self.client_id = YAHOO_CLIENT_ID
-        self.client_secret = YAHOO_CLIENT_SECRET
         self.access_token: str = ""
         self.refresh_token: str = ""
+        self.expires_at: float = 0
+        self.league_key: str = ""
+        self.team_key: str = ""
+        self._pending_state: str = ""
 
-    def get_auth_url(self, callback_url: str) -> str:
-        raise NotImplementedError("Yahoo OAuth not yet implemented — Phase 4")
+    @property
+    def is_authenticated(self) -> bool:
+        return bool(self.access_token)
 
-    async def exchange_code(self, code: str, code_verifier: str) -> dict:
-        raise NotImplementedError("Yahoo OAuth not yet implemented — Phase 4")
+    @property
+    def is_expired(self) -> bool:
+        return time.time() >= self.expires_at
 
-    async def refresh(self) -> str:
-        raise NotImplementedError("Yahoo OAuth not yet implemented — Phase 4")
+    @property
+    def needs_refresh(self) -> bool:
+        return self.is_authenticated and self.is_expired
+
+    def clear(self) -> None:
+        self.access_token = ""
+        self.refresh_token = ""
+        self.expires_at = 0
+        self.league_key = ""
+        self.team_key = ""
+
+
+_store = YahooTokenStore()
+
+
+def get_token_store() -> YahooTokenStore:
+    return _store
+
+
+def _basic_auth_header() -> str:
+    creds = f"{YAHOO_CLIENT_ID}:{YAHOO_CLIENT_SECRET}"
+    encoded = base64.b64encode(creds.encode()).decode()
+    return f"Basic {encoded}"
+
+
+def get_login_url() -> str:
+    """Build the Yahoo OAuth authorization URL."""
+    state = uuid.uuid4().hex
+    _store._pending_state = state
+
+    params = {
+        "client_id": YAHOO_CLIENT_ID,
+        "redirect_uri": YAHOO_REDIRECT_URI,
+        "response_type": "code",
+        "scope": YAHOO_SCOPE,
+        "state": state,
+    }
+    return f"{YAHOO_AUTH_URL}?{urlencode(params)}"
+
+
+async def exchange_code(code: str, state: str) -> dict:
+    """Exchange authorization code for access + refresh tokens."""
+    if state != _store._pending_state:
+        raise ValueError("OAuth state mismatch — possible CSRF")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            YAHOO_TOKEN_URL,
+            headers={
+                "Authorization": _basic_auth_header(),
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={
+                "grant_type": "authorization_code",
+                "redirect_uri": YAHOO_REDIRECT_URI,
+                "code": code,
+            },
+        )
+
+    if resp.status_code != 200:
+        logger.error("Token exchange failed: %s %s", resp.status_code, resp.text)
+        raise RuntimeError(f"Yahoo token exchange failed: {resp.status_code}")
+
+    data = resp.json()
+    _store.access_token = data["access_token"]
+    _store.refresh_token = data["refresh_token"]
+    _store.expires_at = time.time() + data.get("expires_in", 3600) - 60
+
+    logger.info("Yahoo OAuth tokens acquired, expires in %ss", data.get("expires_in"))
+    return data
+
+
+async def refresh_tokens() -> str:
+    """Refresh the access token using the stored refresh token."""
+    if not _store.refresh_token:
+        raise RuntimeError("No refresh token available — re-authenticate")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            YAHOO_TOKEN_URL,
+            headers={
+                "Authorization": _basic_auth_header(),
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={
+                "grant_type": "refresh_token",
+                "redirect_uri": YAHOO_REDIRECT_URI,
+                "refresh_token": _store.refresh_token,
+            },
+        )
+
+    if resp.status_code != 200:
+        logger.error("Token refresh failed: %s %s", resp.status_code, resp.text)
+        _store.clear()
+        raise RuntimeError("Yahoo token refresh failed — re-authenticate")
+
+    data = resp.json()
+    _store.access_token = data["access_token"]
+    if "refresh_token" in data:
+        _store.refresh_token = data["refresh_token"]
+    _store.expires_at = time.time() + data.get("expires_in", 3600) - 60
+
+    logger.info("Yahoo tokens refreshed")
+    return _store.access_token
+
+
+async def get_valid_token() -> str:
+    """Return a valid access token, refreshing if needed."""
+    if not _store.is_authenticated:
+        raise RuntimeError("Not authenticated with Yahoo")
+
+    if _store.needs_refresh:
+        return await refresh_tokens()
+
+    return _store.access_token

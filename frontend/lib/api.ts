@@ -105,6 +105,13 @@ export interface KeeperData {
   keepers: KeeperEntry[];
 }
 
+export interface AuthStatus {
+  authenticated: boolean;
+  mode: "live" | "synthetic";
+  league_key: string;
+  team_key: string;
+}
+
 export interface CriticalAlert {
   severity: "critical" | "warning";
   type: "injury" | "transaction" | "pickup";
@@ -179,6 +186,8 @@ export interface NewsData {
 }
 
 export const api = {
+  authStatus: () => fetchJSON<AuthStatus>("/auth/status"),
+  logout: () => fetch(`${API_URL}/auth/logout`, { method: "POST" }),
   alerts: () => fetchJSON<AlertsData>("/api/alerts"),
   roster: () => fetchJSON<RosterData>("/api/roster"),
   standings: () => fetchJSON<StandingsData>("/api/standings"),

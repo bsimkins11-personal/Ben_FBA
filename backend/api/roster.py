@@ -1,12 +1,14 @@
 from backend.cache.league_cache import LeagueCache
-from backend.config import USE_SYNTHETIC_DATA
+from backend.auth.yahoo_auth import get_token_store
+from backend.api import yahoo_client
 
 
 async def get_my_roster() -> dict:
     """Return the manager's full roster with stats."""
-    if USE_SYNTHETIC_DATA:
-        return LeagueCache().get_roster()
-    raise NotImplementedError("Live Yahoo not yet wired")
+    store = get_token_store()
+    if store.is_authenticated and store.team_key:
+        return await yahoo_client.get_roster(store.team_key)
+    return LeagueCache().get_roster()
 
 
 async def get_roster_stats() -> dict:
