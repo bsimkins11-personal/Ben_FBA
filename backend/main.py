@@ -148,6 +148,32 @@ async def api_team_roster(team_key: str):
     return await get_roster(team_key)
 
 
+@app.get("/api/debug/roster-raw")
+async def debug_roster_raw():
+    """Temporary: return raw Yahoo roster data for first 3 players."""
+    store = get_token_store()
+    if not store.is_authenticated or not store.team_key:
+        return {"error": "not authenticated"}
+    from backend.api.yahoo_client import _get, _dig
+    data = await _get(f"/team/{store.team_key}/roster/players/stats")
+    team = _dig(data, "fantasy_content", "team")
+    if not team or len(team) < 2:
+        return {"error": "no team data"}
+    players_wrapper = team[1].get("roster", {}).get("0", {}).get("players", {})
+    if not players_wrapper:
+        players_wrapper = _dig(team, "1", "roster", "0", "players") or {}
+    sample = {}
+    count = 0
+    for k, v in players_wrapper.items():
+        if k == "count":
+            continue
+        sample[k] = v
+        count += 1
+        if count >= 3:
+            break
+    return {"sample_players": sample}
+
+
 @app.get("/api/standings")
 async def api_standings():
     standings_data = await get_standings()
@@ -172,17 +198,24 @@ async def api_matchup():
 
 @app.get("/api/free-agents")
 async def api_free_agents(position: str | None = Query(None)):
-    fa_data = await get_free_agents(position=position)
-    roster_data = await get_my_roster()
-    standings_data = await get_standings()
+    try:
+        fa_data = await get_free_agents(position=position)
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Free agents fetch failed: %s", exc)
+        fa_data = {"free_agents": []}
 
-    my_ranks = roster_data.get("category_ranks", {})
-    team_totals = [
-        t.get("category_totals", {})
-        for t in standings_data.get("standings", [])
-    ]
-    gaps = analyze_category_gaps(my_ranks, team_totals)
-    weak = get_weak_categories(gaps)
+    try:
+        roster_data = await get_my_roster()
+        standings_data = await get_standings()
+        my_ranks = roster_data.get("category_ranks", {})
+        team_totals = [
+            t.get("category_totals", {})
+            for t in standings_data.get("standings", [])
+        ]
+        gaps = analyze_category_gaps(my_ranks, team_totals)
+        weak = get_weak_categories(gaps)
+    except Exception:
+        weak = []
 
     ranked = rank_free_agents(
         fa_data.get("free_agents", []),

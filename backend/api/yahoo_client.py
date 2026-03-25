@@ -37,7 +37,7 @@ async def _get(path: str, params: dict | None = None) -> dict:
     query = params or {}
     query["format"] = "json"
 
-    async with httpx.AsyncClient(timeout=20.0) as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.get(
             url,
             params=query,
@@ -48,7 +48,7 @@ async def _get(path: str, params: dict | None = None) -> dict:
         logger.warning("Yahoo 401 — attempting token refresh")
         from backend.auth.yahoo_auth import refresh_tokens
         token = await refresh_tokens()
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(
                 url,
                 params=query,
@@ -324,8 +324,12 @@ async def get_roster(team_key: str) -> dict:
                     status = item.get("status_full", status)
                 if "selected_position" in item:
                     sel_pos = item["selected_position"]
-                    if isinstance(sel_pos, list) and len(sel_pos) > 1:
-                        info["position"] = sel_pos[1].get("position", "")
+                    logger.debug("selected_position raw for %s: %s", info.get("full_name", "?"), sel_pos)
+                    if isinstance(sel_pos, list):
+                        for sp_item in sel_pos:
+                            if isinstance(sp_item, dict) and "position" in sp_item:
+                                info["position"] = sp_item["position"]
+                                break
                     elif isinstance(sel_pos, dict):
                         info["position"] = sel_pos.get("position", "")
 
@@ -333,7 +337,12 @@ async def get_roster(team_key: str) -> dict:
         stats = _parse_player_stats(stat_list)
 
         name = info.get("full_name", info.get("name", {}).get("full", ""))
-        position = _POSITION_MAP.get(info.get("position", ""), info.get("position", ""))
+        raw_pos = info.get("position", "")
+        position = _POSITION_MAP.get(raw_pos, raw_pos)
+
+        # Fallback: if selected_position wasn't parsed, use first eligible
+        if not position and eligible:
+            position = _POSITION_MAP.get(eligible[0], eligible[0])
 
         if status and status not in ("IL10", "IL60", "IL15", "DTD"):
             if "IL" in status.upper():
@@ -435,7 +444,7 @@ async def get_scoreboard(league_key: str, week: int | None = None) -> dict:
 async def get_free_agents(
     league_key: str,
     position: str | None = None,
-    count: int = 40,
+    count: int = 25,
 ) -> dict:
     """Fetch free agents from the league."""
     params = ";status=FA"
@@ -443,7 +452,12 @@ async def get_free_agents(
         params += f";position={position}"
     params += f";count={count}"
 
-    data = await _get(f"/league/{league_key}/players{params};out=stats")
+    try:
+        data = await _get(f"/league/{league_key}/players{params}")
+    except Exception as exc:
+        logger.warning("Free agents fetch failed: %s", exc)
+        return {"free_agents": []}
+
     league = _dig(data, "fantasy_content", "league")
     if not league or len(league) < 2:
         return {"free_agents": []}
