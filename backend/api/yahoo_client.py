@@ -443,7 +443,7 @@ async def get_free_agents(
         params += f";position={position}"
     params += f";count={count}"
 
-    data = await _get(f"/league/{league_key}/players{params}/stats")
+    data = await _get(f"/league/{league_key}/players{params};out=stats")
     league = _dig(data, "fantasy_content", "league")
     if not league or len(league) < 2:
         return {"free_agents": []}

@@ -37,7 +37,7 @@ export default function RosterPanel() {
 
   const hitters = roster.filter(
     (p) => !["SP", "RP", "P"].some((pos) => (p.eligible_positions ?? []).includes(pos) && !(p.eligible_positions ?? []).includes("Util"))
-  ).filter((p) => p.stats?.OBP !== undefined);
+  );
 
   const pitchers = roster.filter(
     (p) => ["SP", "RP", "P"].some((pos) => (p.eligible_positions ?? []).includes(pos))
