@@ -35,9 +35,12 @@ app = FastAPI(title="Bush League Co-Pilot", version="0.1.0")
 
 @app.on_event("startup")
 async def _startup():
+    import os
     _log = logging.getLogger(__name__)
-    from backend.config import DATABASE_URL
-    _log.info("Startup: DATABASE_URL is %s", "SET" if DATABASE_URL else "NOT SET")
+    db_url = os.getenv("DATABASE_URL", "")
+    _log.info("Startup: DATABASE_URL is %s (len=%d)", "SET" if db_url else "NOT SET", len(db_url))
+    db_keys = [k for k in os.environ if "PG" in k.upper() or "POST" in k.upper() or "DATA" in k.upper() or "DB" in k.upper()]
+    _log.info("Startup: DB-related env vars: %s", db_keys)
     restored = await restore_tokens_from_db()
     if restored:
         store = get_token_store()
@@ -66,11 +69,13 @@ app.add_middleware(
 
 @app.get("/health")
 async def health():
-    from backend.config import DATABASE_URL
+    import os
+    db_url = os.getenv("DATABASE_URL", "")
     return {
         "status": "ok",
         "version": "0.1.0",
-        "postgres": "configured" if DATABASE_URL else "not_configured",
+        "postgres": "configured" if db_url else "not_configured",
+        "db_url_len": len(db_url),
     }
 
 
