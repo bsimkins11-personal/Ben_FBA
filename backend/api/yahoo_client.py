@@ -479,7 +479,7 @@ async def get_free_agents(
     count: int = 25,
 ) -> dict:
     """Fetch free agents from the league."""
-    params = ";status=FA"
+    params = ";status=A;sort=AR"
     if position:
         params += f";position={position}"
     params += f";count={count}"
@@ -491,12 +491,29 @@ async def get_free_agents(
         return {"free_agents": []}
 
     league = _dig(data, "fantasy_content", "league")
-    if not league or len(league) < 2:
+    if not league:
+        logger.warning("FA: no fantasy_content.league in Yahoo response")
         return {"free_agents": []}
 
-    players_wrapper = league[1].get("players", {})
-    agents = []
+    players_wrapper = None
+    for idx, block in enumerate(league if isinstance(league, list) else [league]):
+        if isinstance(block, dict) and "players" in block:
+            players_wrapper = block["players"]
+            break
 
+    if not players_wrapper:
+        logger.warning("FA: no players wrapper found. league keys: %s",
+                       [type(b).__name__ for b in league] if isinstance(league, list) else list(league.keys()) if isinstance(league, dict) else "?")
+        return {"free_agents": []}
+
+    agents = _parse_players_list(players_wrapper)
+    logger.info("FA: parsed %d free agents from Yahoo", len(agents))
+    return {"free_agents": agents}
+
+
+def _parse_players_list(players_wrapper: dict) -> list[dict]:
+    """Parse Yahoo's players wrapper into a flat list of player dicts."""
+    agents = []
     for k, v in players_wrapper.items():
         if k == "count":
             continue
@@ -519,8 +536,12 @@ async def get_free_agents(
                 if "status" in item:
                     status = item.get("status", "")
 
-        stat_list = player_data[1].get("player_stats", {}).get("stats", []) if len(player_data) > 1 else []
-        stats = _parse_player_stats(stat_list)
+        stats = {}
+        if len(player_data) > 1 and isinstance(player_data[1], dict):
+            stat_list = player_data[1].get("player_stats", {}).get("stats", [])
+            if not stat_list:
+                stat_list = player_data[1].get("player_advanced_stats", {}).get("stats", [])
+            stats = _parse_player_stats(stat_list)
 
         name = info.get("full_name", info.get("name", {}).get("full", ""))
         position_primary = eligible[0] if eligible else ""
@@ -530,11 +551,10 @@ async def get_free_agents(
             "position": position_primary,
             "eligible_positions": eligible,
             "status": status,
-            "ownership": "FA",
+            "ownership": info.get("ownership", {}).get("ownership_type", "FA") if isinstance(info.get("ownership"), dict) else "FA",
             "projected_stats": stats,
         })
-
-    return {"free_agents": agents}
+    return agents
 
 
 async def get_draft_results(league_key: str) -> dict:

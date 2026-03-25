@@ -35,12 +35,18 @@ app = FastAPI(title="Bush League Co-Pilot", version="0.1.0")
 
 @app.on_event("startup")
 async def _startup():
+    _log = logging.getLogger(__name__)
+    from backend.config import DATABASE_URL
+    _log.info("Startup: DATABASE_URL is %s", "SET" if DATABASE_URL else "NOT SET")
     restored = await restore_tokens_from_db()
     if restored:
         store = get_token_store()
-        logging.getLogger(__name__).info(
-            "Auto-restored Yahoo session (league=%s)", store.league_key
+        _log.info(
+            "Auto-restored Yahoo session (league=%s, team=%s)",
+            store.league_key, store.team_key,
         )
+    else:
+        _log.info("No stored Yahoo tokens found — demo mode")
 
 
 app.add_middleware(
@@ -148,30 +154,39 @@ async def api_team_roster(team_key: str):
     return await get_roster(team_key)
 
 
-@app.get("/api/dbg-roster-raw")
-async def debug_roster_raw():
-    """Temporary: return raw Yahoo roster data for first 3 players."""
+@app.get("/api/dbg-fa-raw")
+async def debug_fa_raw():
+    """Temporary: return raw Yahoo free-agents response structure."""
     store = get_token_store()
-    if not store.is_authenticated or not store.team_key:
+    if not store.is_authenticated or not store.league_key:
         return {"error": "not authenticated"}
     from backend.api.yahoo_client import _get, _dig
-    data = await _get(f"/team/{store.team_key}/roster/players/stats")
-    team = _dig(data, "fantasy_content", "team")
-    if not team or len(team) < 2:
-        return {"error": "no team data"}
-    players_wrapper = team[1].get("roster", {}).get("0", {}).get("players", {})
-    if not players_wrapper:
-        players_wrapper = _dig(team, "1", "roster", "0", "players") or {}
-    sample = {}
-    count = 0
-    for k, v in players_wrapper.items():
-        if k == "count":
-            continue
-        sample[k] = v
-        count += 1
-        if count >= 3:
-            break
-    return {"sample_players": sample}
+    try:
+        data = await _get(f"/league/{store.league_key}/players;status=A;sort=AR;count=5")
+    except Exception as exc:
+        return {"error": str(exc)}
+    league = _dig(data, "fantasy_content", "league")
+    if not league:
+        return {"error": "no league in response", "raw_keys": list(data.keys()) if isinstance(data, dict) else str(type(data))}
+    summary = {"league_type": str(type(league).__name__)}
+    if isinstance(league, list):
+        summary["length"] = len(league)
+        for i, block in enumerate(league):
+            if isinstance(block, dict):
+                summary[f"block_{i}_keys"] = list(block.keys())[:10]
+                if "players" in block:
+                    pw = block["players"]
+                    summary["players_keys"] = list(pw.keys())[:8]
+                    for pk, pv in pw.items():
+                        if pk == "count":
+                            summary["players_count"] = pv
+                            continue
+                        if isinstance(pv, dict) and "player" in pv:
+                            summary["sample_player"] = pv["player"]
+                            break
+    elif isinstance(league, dict):
+        summary["keys"] = list(league.keys())[:10]
+    return summary
 
 
 @app.get("/api/standings")
