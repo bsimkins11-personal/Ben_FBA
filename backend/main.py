@@ -66,7 +66,12 @@ app.add_middleware(
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    from backend.config import DATABASE_URL
+    return {
+        "status": "ok",
+        "version": "0.1.0",
+        "postgres": "configured" if DATABASE_URL else "not_configured",
+    }
 
 
 # ── Yahoo OAuth Routes ──────────────────────────────────────────────
