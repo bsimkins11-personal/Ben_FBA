@@ -7,7 +7,17 @@ async def get_my_roster() -> dict:
     """Return the manager's full roster with stats."""
     store = get_token_store()
     if store.is_authenticated and store.team_key:
-        return await yahoo_client.get_roster(store.team_key)
+        roster_data = await yahoo_client.get_roster(store.team_key)
+        # Enrich with category_ranks from standings
+        standings_result = await yahoo_client.get_standings(store.league_key)
+        my_team = next(
+            (t for t in standings_result.get("standings", [])
+             if t["team_key"] == store.team_key), None
+        )
+        if my_team:
+            roster_data["category_ranks"] = my_team.get("category_ranks", {})
+            roster_data["week_stats"] = my_team.get("category_totals", {})
+        return roster_data
     return LeagueCache().get_roster()
 
 

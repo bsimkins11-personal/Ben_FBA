@@ -265,6 +265,17 @@ async def get_standings(league_key: str) -> dict:
             "category_totals": cat_totals,
         })
 
+    # Compute category_ranks from category_totals (Yahoo doesn't provide Roto ranks directly)
+    from backend.logic.category_scorer import ALL_CATS, LOWER_BETTER
+    for cat in ALL_CATS:
+        values = [(i, t.get("category_totals", {}).get(cat, 0)) for i, t in enumerate(standings)]
+        if cat in LOWER_BETTER:
+            values.sort(key=lambda x: x[1])  # lowest = rank 1
+        else:
+            values.sort(key=lambda x: x[1], reverse=True)  # highest = rank 1
+        for rank, (idx, _) in enumerate(values, 1):
+            standings[idx]["category_ranks"][cat] = rank
+
     return {"standings": standings}
 
 
@@ -432,7 +443,7 @@ async def get_free_agents(
         params += f";position={position}"
     params += f";count={count}"
 
-    data = await _get(f"/league/{league_key}/players{params}")
+    data = await _get(f"/league/{league_key}/players{params}/stats")
     league = _dig(data, "fantasy_content", "league")
     if not league or len(league) < 2:
         return {"free_agents": []}

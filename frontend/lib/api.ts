@@ -190,6 +190,7 @@ export const api = {
   logout: () => fetch(`${API_URL}/auth/logout`, { method: "POST" }),
   alerts: () => fetchJSON<AlertsData>("/api/alerts"),
   roster: () => fetchJSON<RosterData>("/api/roster"),
+  teamRoster: (teamKey: string) => fetchJSON<RosterData>(`/api/roster/${teamKey}`),
   standings: () => fetchJSON<StandingsData>("/api/standings"),
   matchup: () => fetchJSON<MatchupData>("/api/matchup"),
   freeAgents: (pos?: string) =>

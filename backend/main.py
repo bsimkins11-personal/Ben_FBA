@@ -141,6 +141,13 @@ async def api_roster():
     return await get_my_roster()
 
 
+@app.get("/api/roster/{team_key:path}")
+async def api_team_roster(team_key: str):
+    """Fetch any team's roster by team_key (e.g. mlb.l.12345.t.3)."""
+    from backend.api.yahoo_client import get_roster
+    return await get_roster(team_key)
+
+
 @app.get("/api/standings")
 async def api_standings():
     standings_data = await get_standings()
