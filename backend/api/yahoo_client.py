@@ -279,6 +279,45 @@ async def get_standings(league_key: str) -> dict:
     return {"standings": standings}
 
 
+def _extract_selected_position(player_data) -> str:
+    """Search player_data for selected_position value from Yahoo roster API."""
+
+    def _find_sp(obj):
+        """Find and return the selected_position subtree."""
+        if isinstance(obj, dict):
+            if "selected_position" in obj:
+                return obj["selected_position"]
+            for v in obj.values():
+                r = _find_sp(v)
+                if r is not None:
+                    return r
+        elif isinstance(obj, list):
+            for item in obj:
+                r = _find_sp(item)
+                if r is not None:
+                    return r
+        return None
+
+    def _pos_from_sp(sp) -> str:
+        """Extract position string from selected_position value."""
+        if isinstance(sp, str):
+            return sp
+        if isinstance(sp, dict):
+            return sp.get("position", "")
+        if isinstance(sp, list):
+            for item in sp:
+                if isinstance(item, dict) and "position" in item:
+                    return item["position"]
+        return ""
+
+    sp_node = _find_sp(player_data)
+    if sp_node is not None:
+        pos = _pos_from_sp(sp_node)
+        logger.debug("selected_position found: %s -> %s", sp_node, pos)
+        return pos
+    return ""
+
+
 async def get_roster(team_key: str) -> dict:
     """Fetch team roster with player stats."""
     data = await _get(f"/team/{team_key}/roster/players/stats")
@@ -322,16 +361,10 @@ async def get_roster(team_key: str) -> dict:
                     status = item.get("status", "")
                 if "status_full" in item:
                     status = item.get("status_full", status)
-                if "selected_position" in item:
-                    sel_pos = item["selected_position"]
-                    logger.debug("selected_position raw for %s: %s", info.get("full_name", "?"), sel_pos)
-                    if isinstance(sel_pos, list):
-                        for sp_item in sel_pos:
-                            if isinstance(sp_item, dict) and "position" in sp_item:
-                                info["position"] = sp_item["position"]
-                                break
-                    elif isinstance(sel_pos, dict):
-                        info["position"] = sel_pos.get("position", "")
+
+        sel_pos = _extract_selected_position(player_data)
+        if sel_pos:
+            info["position"] = sel_pos
 
         stat_list = player_data[1].get("player_stats", {}).get("stats", []) if len(player_data) > 1 else []
         stats = _parse_player_stats(stat_list)
@@ -340,7 +373,6 @@ async def get_roster(team_key: str) -> dict:
         raw_pos = info.get("position", "")
         position = _POSITION_MAP.get(raw_pos, raw_pos)
 
-        # Fallback: if selected_position wasn't parsed, use first eligible
         if not position and eligible:
             position = _POSITION_MAP.get(eligible[0], eligible[0])
 
