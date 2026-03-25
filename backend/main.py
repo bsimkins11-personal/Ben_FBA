@@ -148,7 +148,7 @@ async def api_team_roster(team_key: str):
     return await get_roster(team_key)
 
 
-@app.get("/api/debug/roster-raw")
+@app.get("/api/dbg-roster-raw")
 async def debug_roster_raw():
     """Temporary: return raw Yahoo roster data for first 3 players."""
     store = get_token_store()
